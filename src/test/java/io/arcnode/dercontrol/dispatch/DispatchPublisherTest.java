@@ -2,6 +2,7 @@ package io.arcnode.dercontrol.dispatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.never;
@@ -33,6 +34,7 @@ class DispatchPublisherTest {
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;
+  @Mock private AssetCommandPublisher assetCommandPublisher;
   @Captor private ArgumentCaptor<byte[]> payload;
 
   private static Config config(Config.DispatchMode mode) {
@@ -45,7 +47,8 @@ class DispatchPublisherTest {
         "tcp://localhost:1883",
         "arcnode_der_control_api",
         "site_001",
-        mode);
+        mode,
+        "http://localhost:3000");
   }
 
   private DispatchPublisher publisher() {
@@ -53,7 +56,8 @@ class DispatchPublisherTest {
   }
 
   private DispatchPublisher publisher(Config.DispatchMode mode) {
-    return new DispatchPublisher(mqtt, mapper, config(mode), Clock.fixed(FIXED, ZoneOffset.UTC));
+    return new DispatchPublisher(
+        mqtt, mapper, config(mode), Clock.fixed(FIXED, ZoneOffset.UTC), assetCommandPublisher);
   }
 
   private static DerEvent event(Double targetW, Boolean energize, DerControlStatus status) {
@@ -163,5 +167,41 @@ class DispatchPublisherTest {
     // Assert
     verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("PENDING");
+  }
+
+  @Test
+  void commandsAssetWhenEventIsActiveAndHasATarget() throws Exception {
+    // Arrange: interval already open, utility says ACTIVE -> dispatchState is ACTIVE
+    DerEvent e = event(-1_500_000.0, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(assetCommandPublisher).publishSetpoint(-1_500_000.0);
+  }
+
+  @Test
+  void doesNotCommandAssetWhenNotActive() throws Exception {
+    // Arrange: interval hasn't opened yet -> dispatchState is ARMED, not ACTIVE
+    DerEvent e = event(-1_500_000.0, null, DerControlStatus.SCHEDULED);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(assetCommandPublisher, never()).publishSetpoint(anyDouble());
+  }
+
+  @Test
+  void doesNotCommandAssetWhenActiveButNoTargetPower() throws Exception {
+    // Arrange: an event can be ACTIVE without ever having carried a real-power target
+    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(assetCommandPublisher, never()).publishSetpoint(anyDouble());
   }
 }

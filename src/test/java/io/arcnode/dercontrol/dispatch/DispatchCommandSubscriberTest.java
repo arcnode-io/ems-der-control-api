@@ -41,7 +41,8 @@ class DispatchCommandSubscriberTest {
           "tcp://localhost:1883",
           "arcnode_der_control_api",
           "site_001",
-          Config.DispatchMode.MANUAL);
+          Config.DispatchMode.MANUAL,
+          "http://localhost:3000");
 
   @Mock private MqttClient mqtt;
   @Mock private DerEventService service;

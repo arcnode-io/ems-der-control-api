@@ -1,0 +1,53 @@
+package io.arcnode.dercontrol.topology;
+
+import io.arcnode.dercontrol.Config;
+import io.arcnode.dercontrol.topology.dto.TopologyResponse;
+import java.util.Map;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+/**
+ * Resolves the site's real BESS asset from ems-device-api's topology, so der-control-api can
+ * command it once an event goes {@code ACTIVE} (ADR-002 §16).
+ */
+@Component
+public class TopologyClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(TopologyClient.class);
+  private static final String BESS_MODULE_TEMPLATE = "bess_module";
+
+  private final RestClient restClient;
+
+  public TopologyClient(RestClient.Builder builder, Config config) {
+    this.restClient = builder.baseUrl(config.deviceApiUrl()).build();
+  }
+
+  /**
+   * The first {@code bess_module} device in the site's topology. MVP: a site with more than one
+   * needs a real setpoint-allocation design (splitting one target across several modules) that
+   * doesn't exist yet — this only ever targets one.
+   *
+   * @return the device_id to command, or empty if none is provisioned yet or device-api is
+   *     unreachable — a missing/unready topology shouldn't fail the DER event itself
+   */
+  public Optional<String> findBessModuleDeviceId() {
+    try {
+      TopologyResponse response =
+          restClient.get().uri("/topology").retrieve().body(TopologyResponse.class);
+      if (response == null) {
+        return Optional.empty();
+      }
+      return response.devices().entrySet().stream()
+          .filter(entry -> BESS_MODULE_TEMPLATE.equals(entry.getValue().template()))
+          .map(Map.Entry::getKey)
+          .findFirst();
+    } catch (RestClientException e) {
+      LOG.warn("topology lookup failed; no bess_module target resolved", e);
+      return Optional.empty();
+    }
+  }
+}
