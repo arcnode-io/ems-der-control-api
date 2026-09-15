@@ -32,6 +32,9 @@ import org.yaml.snakeyaml.Yaml;
  * @param mqttUsername broker File-RBAC identity ({@code arcnode_der_control_api}); password is a
  *     secret
  * @param siteId site slug for the {@code sites/{siteId}/devices/...} topic prefix
+ * @param dispatchMode whether an ingested DER event fires without operator sign-off ({@code auto})
+ *     or waits for an {@code approve_dispatch}/{@code reject_dispatch} command ({@code manual}) —
+ *     ADR-002 §16
  */
 @ConfigurationProperties(prefix = "app")
 @Validated
@@ -43,7 +46,8 @@ public record Config(
     @NotBlank String postgresHost,
     @NotBlank String mqttBrokerUrl,
     @NotBlank String mqttUsername,
-    @NotBlank String siteId) {
+    @NotBlank String siteId,
+    @NotNull DispatchMode dispatchMode) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {
@@ -51,6 +55,12 @@ public record Config(
     WARN,
     INFO,
     DEBUG
+  }
+
+  /** Site-level policy for DER event dispatch — {@code cfg.yml}'s {@code dispatchMode} key. */
+  public enum DispatchMode {
+    AUTO,
+    MANUAL
   }
 
   /**

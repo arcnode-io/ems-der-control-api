@@ -101,6 +101,14 @@ class DispatchPublishIT extends AbstractBrokerIT {
             "sites/%s/devices/der_dispatch/measurements/target_active_power/watts"
                 .formatted(config.siteId()));
     assertThat(sample.payload()).contains("\"value\":-1500000.0");
+
+    // Assert: dispatch_state reaches the real broker too — default cfg.yml is auto mode, and the
+    // interval in VALID_BODY is already open, so the real, unstubbed state machine lands on ACTIVE.
+    ReceivedSample state =
+        awaitTopic(
+            "sites/%s/devices/der_dispatch/measurements/dispatch_state/none"
+                .formatted(config.siteId()));
+    assertThat(state.payload()).contains("\"value\":\"ACTIVE\"");
   }
 
   /**

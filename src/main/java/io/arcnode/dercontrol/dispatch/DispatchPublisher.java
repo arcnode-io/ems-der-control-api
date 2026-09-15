@@ -3,6 +3,7 @@ package io.arcnode.dercontrol.dispatch;
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerEvent;
 import io.arcnode.dercontrol.dispatch.dto.BooleanSample;
+import io.arcnode.dercontrol.dispatch.dto.EnumSample;
 import io.arcnode.dercontrol.dispatch.dto.FloatSample;
 import java.time.Clock;
 import org.eclipse.paho.mqttv5.client.MqttClient;
@@ -54,6 +55,8 @@ public class DispatchPublisher {
     if (energize != null) {
       send("energize_enabled", "none", new BooleanSample(ts, energize));
     }
+    String state = event.dispatchState(config.dispatchMode(), clock.instant()).name();
+    send("dispatch_state", "none", new EnumSample(ts, state));
 
     if (LOG.isInfoEnabled()) {
       LOG.info("published dispatch for mRID {} (status {})", event.getMrid(), event.getStatus());
