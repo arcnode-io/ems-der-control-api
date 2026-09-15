@@ -2,6 +2,7 @@ package io.arcnode.dercontrol.derevent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,7 +11,9 @@ import io.arcnode.dercontrol.TestCerts;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.DispatchPublisher;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.util.ReflectionTestUtils;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -29,12 +33,21 @@ class DerEventServiceTest {
 
   private static final Instant START = Instant.parse("2026-09-08T14:00:00Z");
 
+  /** A "now" inside the event's interval — the event is live at ingest. */
+  private static final Instant NOW_DURING_EVENT = START.plusSeconds(1800);
+
   @Mock private DerEventRepository repository;
   @Mock private DispatchPublisher publisher;
+  @Mock private TaskScheduler scheduler;
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   private DerEventService service() {
-    return new DerEventService(repository, publisher, mapper);
+    return service(NOW_DURING_EVENT);
+  }
+
+  private DerEventService service(Instant now) {
+    return new DerEventService(
+        repository, publisher, mapper, Clock.fixed(now, ZoneOffset.UTC), scheduler);
   }
 
   private static DerControlRequest request(String mrid, DerControlStatus status) {
@@ -68,6 +81,21 @@ class DerEventServiceTest {
     ArgumentCaptor<DerEvent> published = ArgumentCaptor.forClass(DerEvent.class);
     verify(publisher).publish(published.capture());
     assertThat(published.getValue().getMrid()).isEqualTo("mrid-1");
+  }
+
+  @Test
+  void ingestSchedulesFutureEventInsteadOfPublishing() {
+    // Arrange: the event starts an hour after "now"
+    Instant now = START.minusSeconds(3600);
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
+
+    // Act
+    service(now).ingest(request("mrid-1", DerControlStatus.SCHEDULED), TestCerts.HEADER_VALUE);
+
+    // Assert: nothing on the bus yet — the publish is armed for interval.start
+    verify(publisher, never()).publish(any());
+    verify(scheduler).schedule(any(Runnable.class), eq(START));
   }
 
   @Test
