@@ -14,7 +14,8 @@ public record DerEventResponse(
     @Nullable Double targetActivePowerW,
     @Nullable Boolean energize,
     Instant receivedAt,
-    String submittedByLfdi) {
+    String submittedByLfdi,
+    @Nullable Boolean approved) {
 
   public static DerEventResponse from(DerEvent event) {
     return new DerEventResponse(
@@ -25,6 +26,7 @@ public record DerEventResponse(
         event.getTargetActivePowerW(),
         event.getEnergize(),
         event.getReceivedAt(),
-        event.getSubmittedByLfdi());
+        event.getSubmittedByLfdi(),
+        event.getApproved());
   }
 }
