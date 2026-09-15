@@ -100,4 +100,17 @@ class DispatchStateTest {
     assertThat(event.dispatchState(Config.DispatchMode.AUTO, AFTER_START))
         .isEqualTo(DispatchState.ACTIVE);
   }
+
+  @Test
+  void staysArmedAfterIntervalStartIfUtilityNeverSentAnActiveRetransmission() {
+    // Arrange: 2030.5 servers are expected to retransmit status=Active when the interval opens
+    // (that's how the utility signals "this is live now"). If that retransmission never arrives,
+    // der-control-api must not infer activeness from wall-clock time alone and self-declare it —
+    // the utility's own status field stays authoritative for "is this actually in force."
+    DerEvent event = event(DerControlStatus.SCHEDULED);
+
+    // Act / Assert
+    assertThat(event.dispatchState(Config.DispatchMode.AUTO, AFTER_START))
+        .isEqualTo(DispatchState.ARMED);
+  }
 }

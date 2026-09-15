@@ -6,6 +6,7 @@ import io.arcnode.dercontrol.dispatch.dto.BooleanSample;
 import io.arcnode.dercontrol.dispatch.dto.EnumSample;
 import io.arcnode.dercontrol.dispatch.dto.FloatSample;
 import java.time.Clock;
+import java.time.Instant;
 import org.eclipse.paho.mqttv5.client.MqttClient;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.Logger;
@@ -44,19 +45,20 @@ public class DispatchPublisher {
 
   /** Publish the setpoint + status channels for one event. */
   public void publish(DerEvent event) {
-    String ts = clock.instant().toString();
+    Instant now = clock.instant();
+    String ts = now.toString();
+    Config.DispatchMode mode = config.dispatchMode();
 
     Double targetActivePowerW = event.getTargetActivePowerW();
     if (targetActivePowerW != null) {
       send("target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
     }
-    send("event_active", "none", new BooleanSample(ts, event.isActive()));
+    send("event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
     Boolean energize = event.getEnergize();
     if (energize != null) {
       send("energize_enabled", "none", new BooleanSample(ts, energize));
     }
-    String state = event.dispatchState(config.dispatchMode(), clock.instant()).name();
-    send("dispatch_state", "none", new EnumSample(ts, state));
+    send("dispatch_state", "none", new EnumSample(ts, event.dispatchState(mode, now).name()));
 
     if (LOG.isInfoEnabled()) {
       LOG.info("published dispatch for mRID {} (status {})", event.getMrid(), event.getStatus());

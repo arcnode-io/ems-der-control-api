@@ -84,8 +84,10 @@ class DerEventServiceTest {
   }
 
   @Test
-  void ingestSchedulesFutureEventInsteadOfPublishing() {
-    // Arrange: the event starts an hour after "now"
+  void ingestPublishesImmediatelyAndAlsoSchedulesRePublishAtIntervalStartWhenFuture() {
+    // Arrange: the event starts an hour after "now". dispatch_state (ARMED/PENDING, never a
+    // self-declared ACTIVE — see DispatchStateTest) is safe to show right away, so an operator or
+    // dashboard sees the pending/armed event immediately rather than only once the interval opens.
     Instant now = START.minusSeconds(3600);
     given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
     given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
@@ -93,8 +95,9 @@ class DerEventServiceTest {
     // Act
     service(now).ingest(request("mrid-1", DerControlStatus.SCHEDULED), TestCerts.HEADER_VALUE);
 
-    // Assert: nothing on the bus yet — the publish is armed for interval.start
-    verify(publisher, never()).publish(any());
+    // Assert: published once now, and armed to re-publish (ARMED -> ACTIVE, once the utility's
+    // own retransmission says so) at interval.start
+    verify(publisher).publish(any());
     verify(scheduler).schedule(any(Runnable.class), eq(START));
   }
 
@@ -173,5 +176,60 @@ class DerEventServiceTest {
 
     // Assert
     assertThat(result).extracting(DerEventResponse::mrid).containsExactly("a", "b");
+  }
+
+  @Test
+  void approveCurrentPendingSetsApprovedTrueSavesAndPublishes() {
+    // Arrange: manual mode, still-undecided event awaiting an approve_dispatch command
+    DerEvent pending =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1", DerControlStatus.SCHEDULED, START, 3600L, null, null, "{}", "lfdi-1"));
+    given(repository.findFirstByApprovedIsNullOrderByReceivedAtDesc())
+        .willReturn(Optional.of(pending));
+    given(repository.save(pending)).willReturn(pending);
+
+    // Act
+    service().approveCurrentPending();
+
+    // Assert
+    assertThat(pending.getApproved()).isTrue();
+    verify(repository).save(pending);
+    verify(publisher).publish(pending);
+  }
+
+  @Test
+  void rejectCurrentPendingSetsApprovedFalseSavesAndPublishes() {
+    // Arrange
+    DerEvent pending =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1", DerControlStatus.SCHEDULED, START, 3600L, null, null, "{}", "lfdi-1"));
+    given(repository.findFirstByApprovedIsNullOrderByReceivedAtDesc())
+        .willReturn(Optional.of(pending));
+    given(repository.save(pending)).willReturn(pending);
+
+    // Act
+    service().rejectCurrentPending();
+
+    // Assert
+    assertThat(pending.getApproved()).isFalse();
+    verify(repository).save(pending);
+    verify(publisher).publish(pending);
+  }
+
+  @Test
+  void approveCurrentPendingIsANoOpWhenNothingIsPending() {
+    // Arrange
+    given(repository.findFirstByApprovedIsNullOrderByReceivedAtDesc()).willReturn(Optional.empty());
+
+    // Act
+    service().approveCurrentPending();
+
+    // Assert: a stray command with nothing to decide doesn't crash the subscriber
+    verify(repository, never()).save(any());
+    verify(publisher, never()).publish(any());
   }
 }
