@@ -11,17 +11,11 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
-/**
- * Entry point. Boots the context; {@link StartupLogger} echoes the resolved config once ready.
- * Scheduling is on so Boot provides the {@code TaskScheduler} that arms DER events for their {@code
- * interval.start}.
- */
+/** Entry point. Boots the context; {@link StartupLogger} echoes the resolved config once ready. */
 @SpringBootApplication
 @ConfigurationPropertiesScan
-@EnableScheduling
 public class Application {
 
   public static void main(String[] args) {
