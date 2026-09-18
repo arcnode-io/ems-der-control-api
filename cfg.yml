@@ -7,7 +7,6 @@ local:
   mqttBrokerUrl: tcp://localhost:1883
   mqttUsername: arcnode_der_control_api
   siteId: site_001
-  dispatchMode: auto
 
 beta:
   logLevel: INFO
@@ -18,4 +17,3 @@ beta:
   mqttBrokerUrl: tcp://hivemq:1883
   mqttUsername: arcnode_der_control_api
   siteId: arcnode_beta
-  dispatchMode: auto

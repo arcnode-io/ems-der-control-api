@@ -30,30 +30,23 @@ class DispatchPublisherTest {
   private static final Instant FIXED = Instant.parse("2026-09-08T14:00:00Z");
   private static final String BASE = "sites/site_001/devices/der_dispatch/measurements/";
 
+  private final Config config =
+      new Config(
+          Config.LogLevel.INFO,
+          8080,
+          "localhost",
+          false,
+          "localhost",
+          "tcp://localhost:1883",
+          "arcnode_der_control_api",
+          "site_001");
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;
   @Captor private ArgumentCaptor<byte[]> payload;
 
-  private static Config config(Config.DispatchMode mode) {
-    return new Config(
-        Config.LogLevel.INFO,
-        8080,
-        "localhost",
-        false,
-        "localhost",
-        "tcp://localhost:1883",
-        "arcnode_der_control_api",
-        "site_001",
-        mode);
-  }
-
   private DispatchPublisher publisher() {
-    return publisher(Config.DispatchMode.AUTO);
-  }
-
-  private DispatchPublisher publisher(Config.DispatchMode mode) {
-    return new DispatchPublisher(mqtt, mapper, config(mode), Clock.fixed(FIXED, ZoneOffset.UTC));
+    return new DispatchPublisher(mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC));
   }
 
   private static DerEvent event(Double targetW, Boolean energize, DerControlStatus status) {
@@ -137,31 +130,5 @@ class DispatchPublisherTest {
 
     // Assert
     verify(mqtt, never()).publish(startsWith(BASE + "energize_enabled"), any(), eq(0), eq(true));
-  }
-
-  @Test
-  void publishesDispatchStateAsEnumSample() throws Exception {
-    // Arrange: auto mode, interval already open -> ACTIVE
-    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
-
-    // Act
-    publisher().publish(e);
-
-    // Assert
-    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
-    assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("ACTIVE");
-  }
-
-  @Test
-  void dispatchStateReflectsManualModePending() throws Exception {
-    // Arrange: manual mode, not yet approved -> PENDING regardless of status
-    DerEvent e = event(null, null, DerControlStatus.SCHEDULED);
-
-    // Act
-    publisher(Config.DispatchMode.MANUAL).publish(e);
-
-    // Assert
-    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
-    assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("PENDING");
   }
 }

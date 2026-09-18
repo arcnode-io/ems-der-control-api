@@ -28,7 +28,6 @@ class ConfigTest {
     assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://localhost:1883");
     assertThat(env.getProperty("app.mqttUsername")).isEqualTo("arcnode_der_control_api");
     assertThat(env.getProperty("app.siteId")).isEqualTo("site_001");
-    assertThat(env.getProperty("app.dispatchMode")).isEqualTo("auto");
   }
 
   @Test
@@ -71,8 +70,7 @@ class ConfigTest {
             "localhost",
             "tcp://localhost:1883",
             "u",
-            "site_001",
-            Config.DispatchMode.AUTO);
+            "site_001");
 
     // Act
     var violations = validator.validate(bad);

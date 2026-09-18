@@ -1,6 +1,5 @@
 package io.arcnode.dercontrol.derevent;
 
-import io.arcnode.dercontrol.Config;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,13 +55,6 @@ public class DerEvent {
   /** LFDI of the client cert that submitted this event (IEEE 2030.5 §6.3.4) — audit trail. */
   @Column(nullable = false)
   private String submittedByLfdi;
-
-  /**
-   * Operator's manual-mode decision — {@code null} until an {@code approve_dispatch}/{@code
-   * reject_dispatch} command is received. Auto mode never sets this; {@link #dispatchState} treats
-   * null as "proceed" outside manual mode.
-   */
-  @Column private @Nullable Boolean approved;
 
   /** JPA-only. */
   protected DerEvent() {
@@ -156,36 +148,5 @@ public class DerEvent {
 
   public void setSubmittedByLfdi(String submittedByLfdi) {
     this.submittedByLfdi = submittedByLfdi;
-  }
-
-  public @Nullable Boolean getApproved() {
-    return approved;
-  }
-
-  public void setApproved(@Nullable Boolean approved) {
-    this.approved = approved;
-  }
-
-  /**
-   * Derives {@link DispatchState} for the {@code dispatch_state} channel. The utility's own
-   * withdrawal (cancelled/superseded) always wins; an explicit operator rejection is terminal next;
-   * manual mode with no decision yet is pending; everything else is armed-or-active by whether
-   * {@code interval.start} has opened.
-   *
-   * @param mode site dispatch policy (ADR-002 §16)
-   * @param now wall-clock instant to compare against {@code interval.start}
-   * @return the state to publish
-   */
-  public DispatchState dispatchState(Config.DispatchMode mode, Instant now) {
-    if (status == DerControlStatus.CANCELLED || status == DerControlStatus.SUPERSEDED) {
-      return DispatchState.IDLE;
-    }
-    if (Boolean.FALSE.equals(approved)) {
-      return DispatchState.REJECTED;
-    }
-    if (mode == Config.DispatchMode.MANUAL && approved == null) {
-      return DispatchState.PENDING;
-    }
-    return now.isBefore(intervalStart) ? DispatchState.ARMED : DispatchState.ACTIVE;
   }
 }
