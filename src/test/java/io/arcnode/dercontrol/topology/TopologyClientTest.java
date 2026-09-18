@@ -40,8 +40,32 @@ class TopologyClientTest {
   }
 
   @Test
-  void resolvesFirstBessModuleDeviceId() {
+  void resolvesFirstBessRackDeviceId() {
     // Arrange
+    Fixture fixture = client();
+    fixture
+        .server()
+        .expect(requestTo(BASE_URL + "/topology"))
+        .andRespond(
+            withSuccess(
+                """
+                {
+                  "devices": {
+                    "operating_envelope": { "template": "operating_envelope" },
+                    "bess_module_1": { "template": "bess_module" },
+                    "bess_rack_1": { "template": "bess_rack" }
+                  }
+                }
+                """,
+                MediaType.APPLICATION_JSON));
+
+    // Act / Assert
+    assertThat(fixture.client().findBessRackDeviceId()).contains("bess_rack_1");
+  }
+
+  @Test
+  void emptyWhenNoBessRackInTopology() {
+    // Arrange: a bess_module rollup with no bess_rack underneath yet doesn't count
     Fixture fixture = client();
     fixture
         .server()
@@ -59,25 +83,7 @@ class TopologyClientTest {
                 MediaType.APPLICATION_JSON));
 
     // Act / Assert
-    assertThat(fixture.client().findBessModuleDeviceId()).contains("bess_module_1");
-  }
-
-  @Test
-  void emptyWhenNoBessModuleInTopology() {
-    // Arrange
-    Fixture fixture = client();
-    fixture
-        .server()
-        .expect(requestTo(BASE_URL + "/topology"))
-        .andRespond(
-            withSuccess(
-                """
-                { "devices": { "operating_envelope": { "template": "operating_envelope" } } }
-                """,
-                MediaType.APPLICATION_JSON));
-
-    // Act / Assert
-    assertThat(fixture.client().findBessModuleDeviceId()).isEmpty();
+    assertThat(fixture.client().findBessRackDeviceId()).isEmpty();
   }
 
   @Test
@@ -90,6 +96,6 @@ class TopologyClientTest {
         .andRespond(withStatus(HttpStatus.NOT_FOUND));
 
     // Act / Assert
-    assertThat(fixture.client().findBessModuleDeviceId()).isEmpty();
+    assertThat(fixture.client().findBessRackDeviceId()).isEmpty();
   }
 }

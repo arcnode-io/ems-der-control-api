@@ -54,9 +54,9 @@ class AssetCommandPublisherTest {
   }
 
   @Test
-  void commandsTheResolvedBessModule() throws Exception {
+  void commandsTheResolvedBessRack() throws Exception {
     // Arrange
-    given(topologyClient.findBessModuleDeviceId()).willReturn(Optional.of("bess_module_1"));
+    given(topologyClient.findBessRackDeviceId()).willReturn(Optional.of("bess_rack_1"));
 
     // Act
     publisher().publishSetpoint(-1_500_000.0);
@@ -64,7 +64,7 @@ class AssetCommandPublisherTest {
     // Assert
     verify(mqtt)
         .publish(
-            eq("sites/site_001/devices/bess_module_1/commands/set/active_power/watts"),
+            eq("sites/site_001/devices/bess_rack_1/commands/set/active_power/watts"),
             payload.capture(),
             eq(1),
             eq(false));
@@ -72,9 +72,9 @@ class AssetCommandPublisherTest {
   }
 
   @Test
-  void publishesNothingWhenTopologyHasNoBessModule() throws Exception {
+  void publishesNothingWhenTopologyHasNoBessRack() throws Exception {
     // Arrange: nothing provisioned yet in device-api's topology
-    given(topologyClient.findBessModuleDeviceId()).willReturn(Optional.empty());
+    given(topologyClient.findBessRackDeviceId()).willReturn(Optional.empty());
 
     // Act
     publisher().publishSetpoint(-1_500_000.0);
