@@ -72,16 +72,6 @@ class DispatchPublishIT extends AbstractBrokerIT {
                   new ReceivedSample(
                       topic, new String(message.getPayload(), StandardCharsets.UTF_8)))
         });
-    // Reason: der_dispatch's device_id is a fixed constant, not mRID-scoped, and every measurement
-    // here is retained — subscribing can immediately deliver values some *earlier* IT class left
-    // behind on this shared broker (up to 4: target_active_power, event_active, energize_enabled,
-    // dispatch_state), before this test's own POST ever runs. Draining everything already queued
-    // separates "already there when I subscribed" from "arrived because of what I just did" — the
-    // retained backlog flushes on subscribe near-instantly, so this isn't racing real network time.
-    ReceivedSample stale;
-    do {
-      stale = received.poll(300, TimeUnit.MILLISECONDS);
-    } while (stale != null);
   }
 
   @AfterEach

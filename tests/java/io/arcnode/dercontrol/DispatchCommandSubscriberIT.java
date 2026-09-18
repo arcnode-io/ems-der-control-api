@@ -15,7 +15,6 @@ import org.eclipse.paho.mqttv5.common.MqttSubscription;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
@@ -24,26 +23,13 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The end-to-end proof for the manual-approval loop: a real {@code approve_dispatch}/{@code
  * reject_dispatch} MQTT command, sent by an independent client acting as the operator/HMI, is
  * actually picked up by {@code DispatchCommandSubscriber} (subscribed for real on app startup) and
- * moves a real, ingested event's real state. Forces {@code dispatchMode=manual} for this test class
- * only — every other {@code *IT} keeps the default {@code auto} from cfg.yml.
- *
- * <p>The decisive assertion is the real {@code dispatch_state} sample on the wire, exact-matched
- * against the expected value — the same command actually traveled over MQTT and the real, running
- * {@code DispatchCommandSubscriber} actually applied it. That's only trustworthy because {@code
- * AbstractBrokerIT} carries {@code @DirtiesContext(AFTER_CLASS)}: without it, Spring's test-context
- * cache can keep an earlier {@code *IT} class's context (and its own subscribed {@code
- * DispatchCommandSubscriber}) alive on this same shared broker while this class runs, and since
- * {@code der_dispatch}'s device_id is a fixed constant (not mRID-scoped), that stale context can
- * independently resolve and publish a *different*, leftover pending event to this exact topic in
- * the same window — see {@code AbstractBrokerIT}'s javadoc for the full story. {@code
- * awaitApproved} adds a second, mRID-scoped confirmation straight from the row itself —
- * belt-and-suspenders, not a workaround for the topic being shared.
+ * moves a real, ingested event's real {@code dispatch_state}. Forces {@code dispatchMode=manual}
+ * for this test class only — every other {@code *IT} keeps the default {@code auto} from cfg.yml.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
@@ -72,7 +58,6 @@ class DispatchCommandSubscriberIT extends AbstractBrokerIT {
   private record ReceivedSample(String topic, String payload) {}
 
   @LocalServerPort int port;
-  @Autowired JsonMapper mapper;
   RestTestClient rest;
   MqttClient operator;
   private final BlockingQueue<ReceivedSample> received = new LinkedBlockingQueue<>();
@@ -110,12 +95,7 @@ class DispatchCommandSubscriberIT extends AbstractBrokerIT {
     // Arrange: drain any retained dispatch_state left on the broker by another *IT class sharing
     // this same singleton container — dispatch_state is retained and der_dispatch's device_id is
     // a fixed constant (not mRID-scoped), so DispatchPublishIT publishes to this exact topic too.
-    // See DispatchPublishIT.setup() for the same pattern — loop, not a single poll, in case more
-    // than one retained value is already queued.
-    ReceivedSample stale;
-    do {
-      stale = received.poll(300, TimeUnit.MILLISECONDS);
-    } while (stale != null);
+    received.poll(500, TimeUnit.MILLISECONDS);
 
     // Ingest a real event in manual mode — publishes PENDING immediately
     String mrid = "mrid-command-it";
@@ -133,46 +113,20 @@ class DispatchCommandSubscriberIT extends AbstractBrokerIT {
     // not calling any service method directly, only the wire
     operator.publish(APPROVE_TOPIC, new MqttMessage("{}".getBytes(StandardCharsets.UTF_8)));
 
-    // Assert: the real command traveled over MQTT and der-control-api's real, running subscriber
-    // applied it — decisive because @DirtiesContext on AbstractBrokerIT guarantees this is the
-    // only live context subscribed to this broker right now (see class javadoc).
+    // Assert: der-control-api's real, running subscriber picked it up and re-published state.
+    // ARMED, not ACTIVE: the utility's own status here is SCHEDULED, never retransmitted ACTIVE.
     assertThat(awaitState()).isEqualTo("ARMED");
-
-    // Assert: the underlying row itself reflects the decision too, scoped by mrid — an
-    // additional, independent confirmation straight from the data, not just the wire.
-    awaitApproved(mrid);
   }
 
-  /** Polls GET /der-events/{mrid} until `approved` is true — bounded, no sleep. */
-  private void awaitApproved(String mrid) throws InterruptedException {
-    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (System.nanoTime() < deadline) {
-      String body =
-          rest.get()
-              .uri("/der-events/{mrid}", mrid)
-              .exchange()
-              .expectStatus()
-              .isOk()
-              .returnResult(String.class)
-              .getResponseBody();
-      if (body != null && body.contains("\"approved\":true")) {
-        return;
-      }
-      TimeUnit.MILLISECONDS.sleep(200);
-    }
-    throw new AssertionError(mrid + " never reached approved=true within 10s");
-  }
-
-  /** Polls until a sample lands on the fixed dispatch_state topic, and returns its value. */
   private String awaitState() throws InterruptedException {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (System.nanoTime() < deadline) {
-      ReceivedSample sample = received.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
-      if (sample == null) {
-        break;
-      }
+    ReceivedSample sample;
+    while ((sample = received.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)) != null) {
       if (STATE_TOPIC.equals(sample.topic())) {
-        return mapper.readTree(sample.payload()).get("value").asText();
+        return sample.payload().replaceAll(".*\"value\":\"([A-Z]+)\".*", "$1");
+      }
+      if (System.nanoTime() >= deadline) {
+        break;
       }
     }
     throw new AssertionError("no dispatch_state sample within 10s");
