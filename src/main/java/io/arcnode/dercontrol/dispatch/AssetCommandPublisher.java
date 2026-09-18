@@ -44,16 +44,16 @@ public class AssetCommandPublisher {
   }
 
   /**
-   * Resolves the site's bess_rack via topology and commands it to {@code activePowerW}. A no-op,
-   * logged not thrown, when topology hasn't got a bess_rack yet — that's an ops/provisioning state,
-   * not a bug in this event's own dispatch.
+   * Resolves the site's bess_module via topology and commands it to {@code activePowerW}. A no-op,
+   * logged not thrown, when topology hasn't got a bess_module yet — that's an ops/provisioning
+   * state, not a bug in this event's own dispatch.
    */
   public void publishSetpoint(double activePowerW) {
     topologyClient
-        .findBessRackDeviceId()
+        .findBessModuleDeviceId()
         .ifPresentOrElse(
             deviceId -> send(deviceId, activePowerW),
-            () -> LOG.warn("no bess_rack in topology; setpoint not sent to any real asset"));
+            () -> LOG.warn("no bess_module in topology; setpoint not sent to any real asset"));
   }
 
   private void send(String deviceId, double activePowerW) {
