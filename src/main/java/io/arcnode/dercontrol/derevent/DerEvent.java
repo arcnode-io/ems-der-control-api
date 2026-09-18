@@ -89,6 +89,11 @@ public class DerEvent {
     this.receivedAt = Instant.now();
   }
 
+  /** True when the event is currently commanding the DER — the {@code event_active} channel. */
+  public boolean isActive() {
+    return status == DerControlStatus.ACTIVE;
+  }
+
   public Long getId() {
     return id;
   }
@@ -162,14 +167,10 @@ public class DerEvent {
   }
 
   /**
-   * Derives {@link DispatchState} for the {@code dispatch_state} channel (and, via {@link
-   * #isActive}, the {@code event_active} channel). The utility's own withdrawal
-   * (cancelled/superseded) always wins; an explicit operator rejection is terminal next; manual
-   * mode with no decision yet is pending. Otherwise the event is ACTIVE only when {@code
-   * interval.start} has opened AND the utility's own status says {@code ACTIVE} — 2030.5 servers
-   * retransmit that status the moment an interval opens, and der-control-api treats that
-   * retransmission as authoritative rather than self-declaring activeness from wall-clock time
-   * alone. Anything approved/auto but not yet (or no longer, per the utility) active is ARMED.
+   * Derives {@link DispatchState} for the {@code dispatch_state} channel. The utility's own
+   * withdrawal (cancelled/superseded) always wins; an explicit operator rejection is terminal next;
+   * manual mode with no decision yet is pending; everything else is armed-or-active by whether
+   * {@code interval.start} has opened.
    *
    * @param mode site dispatch policy (ADR-002 §16)
    * @param now wall-clock instant to compare against {@code interval.start}
@@ -185,22 +186,6 @@ public class DerEvent {
     if (mode == Config.DispatchMode.MANUAL && approved == null) {
       return DispatchState.PENDING;
     }
-    boolean intervalOpen = !now.isBefore(intervalStart);
-    return status == DerControlStatus.ACTIVE && intervalOpen
-        ? DispatchState.ACTIVE
-        : DispatchState.ARMED;
-  }
-
-  /**
-   * True when {@link #dispatchState} resolves to {@link DispatchState#ACTIVE} — the {@code
-   * event_active} channel. Post-policy: reflects approval and interval timing, not just the
-   * utility's raw status field.
-   *
-   * @param mode site dispatch policy (ADR-002 §16)
-   * @param now wall-clock instant to compare against {@code interval.start}
-   * @return whether the event is actually in force right now
-   */
-  public boolean isActive(Config.DispatchMode mode, Instant now) {
-    return dispatchState(mode, now) == DispatchState.ACTIVE;
+    return now.isBefore(intervalStart) ? DispatchState.ARMED : DispatchState.ACTIVE;
   }
 }

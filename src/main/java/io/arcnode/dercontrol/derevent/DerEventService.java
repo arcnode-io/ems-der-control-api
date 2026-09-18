@@ -55,8 +55,12 @@ public class DerEventService {
             .orElseGet(() -> fromRequest(request, lfdi));
 
     DerEvent saved = repository.save(event);
-    publisher.publish(saved);
-    armFutureRepublish(saved);
+    Instant start = saved.getIntervalStart();
+    if (start.isAfter(clock.instant())) {
+      scheduler.schedule(() -> publisher.publish(saved), start);
+    } else {
+      publisher.publish(saved);
+    }
     return DerEventResponse.from(saved);
   }
 
@@ -66,45 +70,6 @@ public class DerEventService {
 
   public List<DerEventResponse> findByStatus(DerControlStatus status) {
     return repository.findByStatus(status).stream().map(DerEventResponse::from).toList();
-  }
-
-  /**
-   * Applies an operator's {@code approve_dispatch} command (ADR-002 §16) to whichever event is
-   * currently pending a decision. A no-op, not an error, when nothing is pending — a stray or
-   * doubled command shouldn't crash the MQTT subscriber.
-   */
-  @Transactional
-  public void approveCurrentPending() {
-    decideCurrentPending(true);
-  }
-
-  /** Applies an operator's {@code reject_dispatch} command — see {@link #approveCurrentPending}. */
-  @Transactional
-  public void rejectCurrentPending() {
-    decideCurrentPending(false);
-  }
-
-  private void decideCurrentPending(boolean approved) {
-    repository
-        .findFirstByApprovedIsNullOrderByReceivedAtDesc()
-        .ifPresent(
-            event -> {
-              event.setApproved(approved);
-              DerEvent saved = repository.save(event);
-              publisher.publish(saved);
-            });
-  }
-
-  /**
-   * Schedules a re-publish at {@code interval.start} for an event whose interval hasn't opened yet,
-   * so ARMED flips to ACTIVE (or PENDING is re-affirmed, if still undecided) the moment it does —
-   * without requiring an operator to do anything once already approved.
-   */
-  private void armFutureRepublish(DerEvent saved) {
-    Instant start = saved.getIntervalStart();
-    if (start.isAfter(clock.instant())) {
-      scheduler.schedule(() -> publisher.publish(saved), start);
-    }
   }
 
   private DerEvent fromRequest(DerControlRequest request, String lfdi) {
