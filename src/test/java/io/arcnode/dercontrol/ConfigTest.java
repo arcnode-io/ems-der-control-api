@@ -29,7 +29,6 @@ class ConfigTest {
     assertThat(env.getProperty("app.mqttUsername")).isEqualTo("arcnode_der_control_api");
     assertThat(env.getProperty("app.siteId")).isEqualTo("site_001");
     assertThat(env.getProperty("app.dispatchMode")).isEqualTo("auto");
-    assertThat(env.getProperty("app.deviceApiUrl")).isEqualTo("http://localhost:3000");
   }
 
   @Test
@@ -73,8 +72,7 @@ class ConfigTest {
             "tcp://localhost:1883",
             "u",
             "site_001",
-            Config.DispatchMode.AUTO,
-            "http://localhost:3000");
+            Config.DispatchMode.AUTO);
 
     // Act
     var violations = validator.validate(bad);

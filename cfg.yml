@@ -8,7 +8,6 @@ local:
   mqttUsername: arcnode_der_control_api
   siteId: site_001
   dispatchMode: auto
-  deviceApiUrl: http://localhost:3000
 
 beta:
   logLevel: INFO
@@ -20,4 +19,3 @@ beta:
   mqttUsername: arcnode_der_control_api
   siteId: arcnode_beta
   dispatchMode: auto
-  deviceApiUrl: http://device-api:3000

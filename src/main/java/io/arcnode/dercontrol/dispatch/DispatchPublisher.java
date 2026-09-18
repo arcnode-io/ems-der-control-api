@@ -18,9 +18,6 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Translates a {@link DerEvent} into canonical arcnode measurement samples and publishes them to
  * the deployment broker on the {@code der_dispatch} device's channels (system_adr §12/§13/§18).
- * When the event is actually {@code ACTIVE}, also hands the setpoint to {@link
- * AssetCommandPublisher} to command the real BESS asset — der_dispatch's own channels are the
- * intake/policy layer, this is where that decision reaches the bus for real.
  *
  * <p>Every ingested event publishes {@code event_active}. {@code target_active_power} and {@code
  * energize_enabled} publish only when the DERControlBase carried that control.
@@ -38,19 +35,12 @@ public class DispatchPublisher {
   private final JsonMapper mapper;
   private final Config config;
   private final Clock clock;
-  private final AssetCommandPublisher assetCommandPublisher;
 
-  public DispatchPublisher(
-      MqttClient mqtt,
-      JsonMapper mapper,
-      Config config,
-      Clock clock,
-      AssetCommandPublisher assetCommandPublisher) {
+  public DispatchPublisher(MqttClient mqtt, JsonMapper mapper, Config config, Clock clock) {
     this.mqtt = mqtt;
     this.mapper = mapper;
     this.config = config;
     this.clock = clock;
-    this.assetCommandPublisher = assetCommandPublisher;
   }
 
   /** Publish the setpoint + status channels for one event. */
@@ -63,17 +53,12 @@ public class DispatchPublisher {
     if (targetActivePowerW != null) {
       send("target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
     }
-    boolean active = event.isActive(mode, now);
-    send("event_active", "none", new BooleanSample(ts, active));
+    send("event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
     Boolean energize = event.getEnergize();
     if (energize != null) {
       send("energize_enabled", "none", new BooleanSample(ts, energize));
     }
     send("dispatch_state", "none", new EnumSample(ts, event.dispatchState(mode, now).name()));
-
-    if (active && targetActivePowerW != null) {
-      assetCommandPublisher.publishSetpoint(targetActivePowerW);
-    }
 
     if (LOG.isInfoEnabled()) {
       LOG.info("published dispatch for mRID {} (status {})", event.getMrid(), event.getStatus());

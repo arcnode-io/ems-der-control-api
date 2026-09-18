@@ -35,8 +35,6 @@ import org.yaml.snakeyaml.Yaml;
  * @param dispatchMode whether an ingested DER event fires without operator sign-off ({@code auto})
  *     or waits for an {@code approve_dispatch}/{@code reject_dispatch} command ({@code manual}) —
  *     ADR-002 §16
- * @param deviceApiUrl base URL for ems-device-api, queried for topology (same pattern as
- *     ems-device-api's own {@code edpApiUrl})
  */
 @ConfigurationProperties(prefix = "app")
 @Validated
@@ -49,8 +47,7 @@ public record Config(
     @NotBlank String mqttBrokerUrl,
     @NotBlank String mqttUsername,
     @NotBlank String siteId,
-    @NotNull DispatchMode dispatchMode,
-    @NotBlank String deviceApiUrl) {
+    @NotNull DispatchMode dispatchMode) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {

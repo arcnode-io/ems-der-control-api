@@ -52,12 +52,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
-    <!-- RestClient (TopologyClient -> ems-device-api) — Boot 4 split this out of
-         spring-boot-starter-web into its own starter. -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-restclient</artifactId>
-    </dependency>
     <!-- hot-reload parity with nest's start:dev watch mode / uvicorn's reload flag. optional
          plus runtime scope so it never leaks into anything that depends on this jar (Spring
          Initializr's own convention). -->
