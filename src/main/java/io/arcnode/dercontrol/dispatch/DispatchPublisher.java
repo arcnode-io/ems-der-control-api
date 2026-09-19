@@ -15,17 +15,21 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Translates a {@link DerEvent} into canonical arcnode measurement samples and publishes them to
- * the deployment broker on the {@code der_dispatch} device's channels (system_adr §12/§13/§18).
+ * the deployment broker on the {@code der_dispatch} device's channels (system_adr §12/§13/§18),
+ * plus the site's {@code operating_envelope} device when the same DERControlBase payload carried
+ * envelope-mode limits (opModImpLimW/opModExpLimW) alongside or instead of a target-mode setpoint.
  *
- * <p>Every ingested event publishes {@code event_active}. {@code target_active_power} and {@code
- * energize_enabled} publish only when the DERControlBase carried that control.
+ * <p>Every ingested event publishes {@code event_active}. {@code target_active_power}, {@code
+ * energize_enabled}, {@code import_limit}, and {@code export_limit} each publish only when the
+ * DERControlBase carried that control.
  */
 @Component
 public class DispatchPublisher {
 
   private static final Logger LOG = LoggerFactory.getLogger(DispatchPublisher.class);
   private static final String DEVICE_ID = "der_dispatch";
-  private static final String TOPIC = "sites/%s/devices/" + DEVICE_ID + "/measurements/%s/%s";
+  private static final String ENVELOPE_DEVICE_ID = "operating_envelope";
+  private static final String TOPIC = "sites/%s/devices/%s/measurements/%s/%s";
   private static final int QOS = 0;
   private static final boolean RETAIN = true;
 
@@ -41,18 +45,27 @@ public class DispatchPublisher {
     this.clock = clock;
   }
 
-  /** Publish the setpoint + status channels for one event. */
+  /** Publish the setpoint + status + envelope channels for one event. */
   public void publish(DerEvent event) {
     String ts = clock.instant().toString();
 
     Double targetActivePowerW = event.getTargetActivePowerW();
     if (targetActivePowerW != null) {
-      send("target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
+      send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
     }
-    send("event_active", "none", new BooleanSample(ts, event.isActive()));
+    send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive()));
     Boolean energize = event.getEnergize();
     if (energize != null) {
-      send("energize_enabled", "none", new BooleanSample(ts, energize));
+      send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));
+    }
+
+    Double importLimitW = event.getImportLimitW();
+    if (importLimitW != null) {
+      send(ENVELOPE_DEVICE_ID, "import_limit", "watts", new FloatSample(ts, importLimitW));
+    }
+    Double exportLimitW = event.getExportLimitW();
+    if (exportLimitW != null) {
+      send(ENVELOPE_DEVICE_ID, "export_limit", "watts", new FloatSample(ts, exportLimitW));
     }
 
     if (LOG.isInfoEnabled()) {
@@ -60,8 +73,8 @@ public class DispatchPublisher {
     }
   }
 
-  private void send(String measurement, String unit, Object sample) {
-    String topic = TOPIC.formatted(config.siteId(), measurement, unit);
+  private void send(String deviceId, String measurement, String unit, Object sample) {
+    String topic = TOPIC.formatted(config.siteId(), deviceId, measurement, unit);
     try {
       mqtt.publish(topic, mapper.writeValueAsBytes(sample), QOS, RETAIN);
     } catch (JacksonException | MqttException e) {

@@ -13,6 +13,8 @@ public record DerEventResponse(
     long durationSeconds,
     @Nullable Double targetActivePowerW,
     @Nullable Boolean energize,
+    @Nullable Double importLimitW,
+    @Nullable Double exportLimitW,
     Instant receivedAt,
     String submittedByLfdi) {
 
@@ -24,6 +26,8 @@ public record DerEventResponse(
         event.getDurationSeconds(),
         event.getTargetActivePowerW(),
         event.getEnergize(),
+        event.getImportLimitW(),
+        event.getExportLimitW(),
         event.getReceivedAt(),
         event.getSubmittedByLfdi());
   }

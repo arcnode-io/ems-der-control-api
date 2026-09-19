@@ -29,6 +29,8 @@ class DispatchPublisherTest {
 
   private static final Instant FIXED = Instant.parse("2026-09-08T14:00:00Z");
   private static final String BASE = "sites/site_001/devices/der_dispatch/measurements/";
+  private static final String ENVELOPE_BASE =
+      "sites/site_001/devices/operating_envelope/measurements/";
 
   private final Config config =
       new Config(
@@ -50,7 +52,26 @@ class DispatchPublisherTest {
   }
 
   private static DerEvent event(Double targetW, Boolean energize, DerControlStatus status) {
-    return new DerEvent("mrid-1", status, FIXED, 3600L, targetW, energize, "{}", "lfdi-test");
+    return event(targetW, energize, null, null, status);
+  }
+
+  private static DerEvent event(
+      Double targetW,
+      Boolean energize,
+      Double importLimitW,
+      Double exportLimitW,
+      DerControlStatus status) {
+    return new DerEvent(
+        "mrid-1",
+        status,
+        FIXED,
+        3600L,
+        targetW,
+        energize,
+        importLimitW,
+        exportLimitW,
+        "{}",
+        "lfdi-test");
   }
 
   @Test
@@ -130,5 +151,45 @@ class DispatchPublisherTest {
 
     // Assert
     verify(mqtt, never()).publish(startsWith(BASE + "energize_enabled"), any(), eq(0), eq(true));
+  }
+
+  @Test
+  void publishesImportLimitToOperatingEnvelopeWhenPresent() throws Exception {
+    // Arrange
+    DerEvent e = event(null, null, 500_000.0, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt)
+        .publish(eq(ENVELOPE_BASE + "import_limit/watts"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isEqualTo(500_000.0);
+  }
+
+  @Test
+  void publishesExportLimitToOperatingEnvelopeWhenPresent() throws Exception {
+    // Arrange
+    DerEvent e = event(null, null, null, 300_000.0, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt)
+        .publish(eq(ENVELOPE_BASE + "export_limit/watts"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isEqualTo(300_000.0);
+  }
+
+  @Test
+  void skipsEnvelopeChannelsWhenAbsent() throws Exception {
+    // Arrange
+    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt, never()).publish(startsWith(ENVELOPE_BASE), any(), eq(0), eq(true));
   }
 }

@@ -42,7 +42,7 @@ class DerEventServiceTest {
         mrid,
         status,
         new DerControlRequest.Interval(START, 3600L),
-        new DerControlRequest.ControlBase(-1_000_000.0, true));
+        new DerControlRequest.ControlBase(-1_000_000.0, true, null, null));
   }
 
   private static DerEvent withId(long id, DerEvent event) {
@@ -83,6 +83,8 @@ class DerEventServiceTest {
                 3600L,
                 -1_000_000.0,
                 true,
+                null,
+                null,
                 "{}",
                 "old-lfdi"));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(existing));
@@ -105,7 +107,16 @@ class DerEventServiceTest {
         withId(
             1,
             new DerEvent(
-                "mrid-1", DerControlStatus.ACTIVE, START, 3600L, 500.0, null, "{}", "lfdi-1"));
+                "mrid-1",
+                DerControlStatus.ACTIVE,
+                START,
+                3600L,
+                500.0,
+                null,
+                null,
+                null,
+                "{}",
+                "lfdi-1"));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(event));
 
     // Act
@@ -134,10 +145,14 @@ class DerEventServiceTest {
     // Arrange
     DerEvent a =
         withId(
-            1, new DerEvent("a", DerControlStatus.ACTIVE, START, 60L, null, null, "{}", "lfdi-a"));
+            1,
+            new DerEvent(
+                "a", DerControlStatus.ACTIVE, START, 60L, null, null, null, null, "{}", "lfdi-a"));
     DerEvent b =
         withId(
-            2, new DerEvent("b", DerControlStatus.ACTIVE, START, 60L, null, null, "{}", "lfdi-b"));
+            2,
+            new DerEvent(
+                "b", DerControlStatus.ACTIVE, START, 60L, null, null, null, null, "{}", "lfdi-b"));
     given(repository.findByStatus(DerControlStatus.ACTIVE)).willReturn(List.of(a, b));
 
     // Act

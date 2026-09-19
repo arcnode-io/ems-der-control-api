@@ -63,6 +63,8 @@ public class DerEventService {
         request.interval().durationSeconds(),
         request.derControlBase().opModTargetW(),
         request.derControlBase().opModEnergize(),
+        request.derControlBase().opModImpLimW(),
+        request.derControlBase().opModExpLimW(),
         mapper.writeValueAsString(request),
         lfdi);
   }
@@ -73,6 +75,8 @@ public class DerEventService {
     existing.setDurationSeconds(request.interval().durationSeconds());
     existing.setTargetActivePowerW(request.derControlBase().opModTargetW());
     existing.setEnergize(request.derControlBase().opModEnergize());
+    existing.setImportLimitW(request.derControlBase().opModImpLimW());
+    existing.setExportLimitW(request.derControlBase().opModExpLimW());
     existing.setSubmittedByLfdi(lfdi);
     return existing;
   }

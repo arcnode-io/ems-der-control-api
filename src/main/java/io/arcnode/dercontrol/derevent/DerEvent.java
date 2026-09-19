@@ -45,6 +45,12 @@ public class DerEvent {
   /** opModEnergize — absent when not specified. */
   @Column private @Nullable Boolean energize;
 
+  /** opModImpLimW — absent unless the utility sent envelope-mode control. */
+  @Column private @Nullable Double importLimitW;
+
+  /** opModExpLimW — absent unless the utility sent envelope-mode control. */
+  @Column private @Nullable Double exportLimitW;
+
   @Column(nullable = false, updatable = false)
   private Instant receivedAt;
 
@@ -68,6 +74,8 @@ public class DerEvent {
       long durationSeconds,
       @Nullable Double targetActivePowerW,
       @Nullable Boolean energize,
+      @Nullable Double importLimitW,
+      @Nullable Double exportLimitW,
       String rawPayload,
       String submittedByLfdi) {
     this.mrid = mrid;
@@ -76,6 +84,8 @@ public class DerEvent {
     this.durationSeconds = durationSeconds;
     this.targetActivePowerW = targetActivePowerW;
     this.energize = energize;
+    this.importLimitW = importLimitW;
+    this.exportLimitW = exportLimitW;
     this.rawPayload = rawPayload;
     this.submittedByLfdi = submittedByLfdi;
     this.receivedAt = Instant.now();
@@ -132,6 +142,22 @@ public class DerEvent {
 
   public void setEnergize(@Nullable Boolean energize) {
     this.energize = energize;
+  }
+
+  public @Nullable Double getImportLimitW() {
+    return importLimitW;
+  }
+
+  public void setImportLimitW(@Nullable Double importLimitW) {
+    this.importLimitW = importLimitW;
+  }
+
+  public @Nullable Double getExportLimitW() {
+    return exportLimitW;
+  }
+
+  public void setExportLimitW(@Nullable Double exportLimitW) {
+    this.exportLimitW = exportLimitW;
   }
 
   public Instant getReceivedAt() {

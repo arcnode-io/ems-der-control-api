@@ -30,11 +30,18 @@ public record DerControlRequest(
   public record Interval(@NotNull Instant start, @Positive long durationSeconds) {}
 
   /**
-   * {@code DERControlBase} subset. Both fields optional — a status-only re-transmission (e.g.
-   * Cancelled) may carry neither.
+   * {@code DERControlBase} subset. All fields optional — a status-only re-transmission (e.g.
+   * Cancelled) may carry none of them, and envelope-mode control (import/export limit) travels in
+   * the same payload as target-mode control (real power target) rather than a separate one.
    *
    * @param opModTargetW commanded real power target, watts, signed
    * @param opModEnergize commanded energize/connect state
+   * @param opModImpLimW commanded import limit (envelope mode), watts
+   * @param opModExpLimW commanded export limit (envelope mode), watts
    */
-  public record ControlBase(@Nullable Double opModTargetW, @Nullable Boolean opModEnergize) {}
+  public record ControlBase(
+      @Nullable Double opModTargetW,
+      @Nullable Boolean opModEnergize,
+      @Nullable Double opModImpLimW,
+      @Nullable Double opModExpLimW) {}
 }

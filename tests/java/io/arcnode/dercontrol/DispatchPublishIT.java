@@ -60,7 +60,8 @@ class DispatchPublishIT extends AbstractBrokerIT {
             "test-subscriber-" + UUID.randomUUID(),
             new MemoryPersistence());
     subscriber.connect();
-    String topicFilter = "sites/%s/devices/der_dispatch/measurements/#".formatted(config.siteId());
+    // Wildcard device so this one subscription catches both der_dispatch and operating_envelope.
+    String topicFilter = "sites/%s/devices/+/measurements/#".formatted(config.siteId());
     // Reason: MqttClient.subscribe(String, int, IMqttMessageListener) recurses into itself and
     // stack-overflows — a confirmed Paho 1.2.5 bug (eclipse-paho/paho.mqtt.java#917/#863/#816).
     // The MqttSubscription[]/IMqttMessageListener[] overload it's supposed to delegate to is fine.
@@ -101,6 +102,46 @@ class DispatchPublishIT extends AbstractBrokerIT {
             "sites/%s/devices/der_dispatch/measurements/target_active_power/watts"
                 .formatted(config.siteId()));
     assertThat(sample.payload()).contains("\"value\":-1500000.0");
+  }
+
+  @Test
+  void postWithEnvelopeLimitsPublishesToOperatingEnvelope() throws Exception {
+    // Arrange — opModImpLimW/opModExpLimW travel in the same DERControlBase payload as
+    // opModTargetW, per the SME-approved envelope-wiring handoff.
+    String mrid = "mrid-envelope-it";
+    String body =
+        """
+        {
+          "mrid": "%s",
+          "eventStatus": "ACTIVE",
+          "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
+          "derControlBase": { "opModImpLimW": 500000.0, "opModExpLimW": 300000.0 }
+        }
+        """
+            .formatted(mrid);
+
+    // Act
+    rest.post()
+        .uri("/der-events")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
+        .body(body)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    // Assert: both envelope channels land on operating_envelope, not der_dispatch
+    ReceivedSample importSample =
+        awaitTopic(
+            "sites/%s/devices/operating_envelope/measurements/import_limit/watts"
+                .formatted(config.siteId()));
+    assertThat(importSample.payload()).contains("\"value\":500000.0");
+
+    ReceivedSample exportSample =
+        awaitTopic(
+            "sites/%s/devices/operating_envelope/measurements/export_limit/watts"
+                .formatted(config.siteId()));
+    assertThat(exportSample.payload()).contains("\"value\":300000.0");
   }
 
   /**
