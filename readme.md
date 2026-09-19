@@ -13,7 +13,7 @@ persists them, and republishes the `DERControlBase` setpoints onto the arcnode M
 measurement samples on a `der_dispatch` singleton device — the same two-family topic contract
 every other EMS telemetry feed uses.
 
-The IP-native twin of the DNP3 path: `dlr-operating-envelope` → `ems-industrial-gateway` →
+The IP-native twin of the DNP3 path: `dlr-rtu-firmware` → `ems-industrial-gateway` →
 `operating_envelope` already carries utility DOE limits over DNP3; this service carries the
 2030.5/OpenADR half the arcnode site page lists as "Curtailment commands (DNP3/OpenADR)".
 
