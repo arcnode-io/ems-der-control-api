@@ -13,9 +13,10 @@ persists them, and republishes the `DERControlBase` setpoints onto the arcnode M
 measurement samples on a `der_dispatch` singleton device — the same two-family topic contract
 every other EMS telemetry feed uses.
 
-The IP-native twin of the DNP3 path: `dlr-rtu-firmware` → `ems-industrial-gateway` →
-`operating_envelope` already carries utility DOE limits over DNP3; this service carries the
-2030.5/OpenADR half the arcnode site page lists as "Curtailment commands (DNP3/OpenADR)".
+The IP-native twin of the DNP3 path: `dlr-rtu-firmware` → `ems-industrial-gateway` carries
+curtailment commands over DNP3; this service carries the 2030.5/OpenADR half the arcnode site page
+lists as "Curtailment commands (DNP3/OpenADR)" — including `operating_envelope`'s import/export
+limits, which have no DNP3 source and are published from here (see Status below).
 
 Instance of `~/engineering-with-ai/java-spring-jpa`.
 
@@ -32,7 +33,9 @@ that terminates mTLS — see `platform-api`). Device identity (LFDI/SFDI) is der
 forwarded cert and persisted on each event for audit.
 
 Each ingested event publishes to
-`sites/{siteId}/devices/der_dispatch/measurements/{target_active_power|event_active|energize_enabled}/{unit}`.
+`sites/{siteId}/devices/der_dispatch/measurements/{target_active_power|event_active|energize_enabled}/{unit}`,
+and — when the DERControlBase carried envelope-mode limits — to
+`sites/{siteId}/devices/operating_envelope/measurements/{import_limit|export_limit}/watts`.
 
 ## Diagrams
 
@@ -51,6 +54,7 @@ der_control_ingress -> der_control_api: forward plain HTTP + X-SSL-Client-Cert h
 der_control_api -> der_control_api: derive LFDI/SFDI from forwarded cert
 der_control_api -> dercontrol_db: upsert by mRID (+ submittedByLfdi)
 der_control_api -> broker: pub measurements/der_dispatch/*\n(target_active_power, event_active, energize_enabled)
+der_control_api -> broker: pub measurements/operating_envelope/*\n(import_limit, export_limit — when present)
 der_control_api -> utility: 201 created
 ```
 
@@ -63,6 +67,7 @@ database timeseries
 participant ems_hmi
 
 der_control_api -> broker: pub sites/{site}/devices/der_dispatch/measurements/*
+der_control_api -> broker: pub sites/{site}/devices/operating_envelope/measurements/*
 broker -> timeseries: telemetry_writer persists (wildcard subscriber)
 broker -> ems_hmi: Grid Events / DER Control panel (subscribed via AsyncAPI-generated topics)
 
@@ -139,9 +144,15 @@ Open design questions, none resolved yet:
 
 - No EMS supervisory-control loop exists to *act* on the published setpoints — they're persisted
   and shown on the HMI, but nothing downstream reacts. Acceptable for MVP?
-- `opModImpLimW` / `opModExpLimW` (import/export limit) are in the 2030.5 spec but were never
-  wired up — `operating_envelope` already owns that quantity via DNP3. Confirm this service
-  should stay scoped to `target_active_power` / `event_active` / `energize_enabled` only.
 - No event-window scheduler — an event's `start`/`duration` is persisted but nothing flips
   `event_active` back to `false` at window close (or on broker restart, since measurements
   retain). Publishes only happen on receipt.
+
+Resolved:
+
+- `opModImpLimW` / `opModExpLimW` (import/export limit) now publish to `operating_envelope`'s
+  `import_limit`/`export_limit` when present in the DERControlBase payload. This service used to
+  assume `operating_envelope` already owned that quantity via DNP3 — it doesn't; there's no
+  DNP3 source for it (SME-approved
+  envelope-wiring handoff, 2026-09-18). `DispatchPublisher` handles both `der_dispatch` and
+  `operating_envelope` off the same ingested event.
