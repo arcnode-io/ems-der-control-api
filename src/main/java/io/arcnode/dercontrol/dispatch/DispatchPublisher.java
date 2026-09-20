@@ -92,6 +92,18 @@ public class DispatchPublisher {
     }
   }
 
+  /**
+   * Publishes sustained non-delivery detection (Phase III) — orthogonal to {@code dispatch_state},
+   * since a physical shortfall is a delivery concern, not a policy/authorization one.
+   */
+  public void publishShortfall(boolean shortfall) {
+    send(
+        DEVICE_ID,
+        "dispatch_shortfall",
+        "none",
+        new BooleanSample(clock.instant().toString(), shortfall));
+  }
+
   private void send(String deviceId, String measurement, String unit, Object sample) {
     String topic = TOPIC.formatted(config.siteId(), deviceId, measurement, unit);
     try {
