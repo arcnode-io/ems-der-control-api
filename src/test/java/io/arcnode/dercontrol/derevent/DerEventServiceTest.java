@@ -2,15 +2,19 @@ package io.arcnode.dercontrol.derevent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.TestCerts;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.DispatchPublisher;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.util.ReflectionTestUtils;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -28,13 +33,16 @@ import tools.jackson.databind.json.JsonMapper;
 class DerEventServiceTest {
 
   private static final Instant START = Instant.parse("2026-09-08T14:00:00Z");
+  private static final Instant NOW = Instant.parse("2026-09-08T13:00:00Z");
 
   @Mock private DerEventRepository repository;
   @Mock private DispatchPublisher publisher;
+  @Mock private TaskScheduler scheduler;
+  private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   private DerEventService service() {
-    return new DerEventService(repository, publisher, mapper);
+    return new DerEventService(repository, publisher, mapper, clock, scheduler);
   }
 
   private static DerControlRequest request(String mrid, DerControlStatus status) {
@@ -138,6 +146,67 @@ class DerEventServiceTest {
     // Assert
     assertThat(result).isEmpty();
     verify(publisher, never()).publish(any());
+  }
+
+  @Test
+  void ingestPublishesImmediatelyAndArmsFutureRepublishWhenIntervalNotYetOpen() {
+    // Arrange: START is after the fixed NOW — interval hasn't opened yet
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
+
+    // Act
+    service().ingest(request("mrid-1", DerControlStatus.ACTIVE), TestCerts.HEADER_VALUE);
+
+    // Assert: PENDING/ARMED visible right away, and re-armed for when the interval opens
+    verify(publisher, times(1)).publish(any(DerEvent.class));
+    verify(scheduler).schedule(any(Runnable.class), eq(START));
+  }
+
+  @Test
+  void ingestDoesNotArmARepublishWhenIntervalAlreadyOpen() {
+    // Arrange: an event whose interval.start is already in the past relative to NOW
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
+    DerControlRequest openRequest =
+        new DerControlRequest(
+            "mrid-1",
+            DerControlStatus.ACTIVE,
+            new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
+            new DerControlRequest.ControlBase(-1_000_000.0, true, null, null));
+
+    // Act
+    service().ingest(openRequest, TestCerts.HEADER_VALUE);
+
+    // Assert: still publishes once, but nothing left to arm
+    verify(publisher, times(1)).publish(any(DerEvent.class));
+    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+  }
+
+  @Test
+  void rearmsPersistedFutureEventsOnStartup() {
+    // Arrange: a restart-recovery scenario — an event was persisted with a future interval.start
+    // before the process died, and the in-memory TaskScheduler lost its scheduled task with it.
+    DerEvent armed =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1",
+                DerControlStatus.ACTIVE,
+                START,
+                3600L,
+                -1_000_000.0,
+                true,
+                null,
+                null,
+                "{}",
+                "lfdi-1"));
+    given(repository.findByIntervalStartAfter(NOW)).willReturn(List.of(armed));
+
+    // Act
+    service().rearmFutureEvents();
+
+    // Assert
+    verify(scheduler).schedule(any(Runnable.class), eq(START));
   }
 
   @Test
