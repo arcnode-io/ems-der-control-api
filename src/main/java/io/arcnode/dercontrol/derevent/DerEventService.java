@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
@@ -78,6 +79,39 @@ public class DerEventService {
     if (start.isAfter(clock.instant())) {
       scheduler.schedule(() -> publisher.publish(event), start);
     }
+  }
+
+  /**
+   * Applies an operator's {@code approve_dispatch} command. Commands carry no mRID (the fixed
+   * {@code commands/{verb}/event_active/none} topic shape has no slot for one) unless the sender
+   * chose to include one in the payload — when present, targets that exact event; a doubled or
+   * unresolvable command is a no-op, not an error, so it shouldn't crash the MQTT subscriber.
+   *
+   * @param mrid the event to target, or {@code null} to fall back to the nearest still-undecided
+   *     event's own {@code interval.start}
+   */
+  @Transactional
+  public void approveCurrentPending(@Nullable String mrid) {
+    decideCurrentPending(mrid, true);
+  }
+
+  /** Applies an operator's {@code reject_dispatch} command — see {@link #approveCurrentPending}. */
+  @Transactional
+  public void rejectCurrentPending(@Nullable String mrid) {
+    decideCurrentPending(mrid, false);
+  }
+
+  private void decideCurrentPending(@Nullable String mrid, boolean approved) {
+    Optional<DerEvent> target =
+        mrid != null
+            ? repository.findByMrid(mrid)
+            : repository.findFirstByApprovedIsNullOrderByIntervalStartAsc();
+    target.ifPresent(
+        event -> {
+          event.setApproved(approved);
+          DerEvent saved = repository.save(event);
+          publisher.publish(saved);
+        });
   }
 
   public Optional<DerEventResponse> findByMrid(String mrid) {

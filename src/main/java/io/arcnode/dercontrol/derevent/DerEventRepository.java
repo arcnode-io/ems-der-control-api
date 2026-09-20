@@ -16,4 +16,11 @@ public interface DerEventRepository extends JpaRepository<DerEvent, Long> {
    * Events not yet at their interval.start — for re-arming a scheduled republish after a restart.
    */
   List<DerEvent> findByIntervalStartAfter(Instant now);
+
+  /**
+   * The still-undecided event nearest its own interval.start — the approve/reject fallback when a
+   * command carries no mRID (the fixed commands/{verb}/event_active/none topic shape has no slot
+   * for one).
+   */
+  Optional<DerEvent> findFirstByApprovedIsNullOrderByIntervalStartAsc();
 }

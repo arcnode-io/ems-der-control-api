@@ -210,6 +210,75 @@ class DerEventServiceTest {
   }
 
   @Test
+  void approveCurrentPendingByMridTargetsThatExactEvent() {
+    // Arrange: two events pending at once — mrid disambiguates which one
+    DerEvent target = withId(1, event("mrid-1", null));
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.of(target));
+    given(repository.save(target)).willReturn(target);
+
+    // Act
+    service().approveCurrentPending("mrid-1");
+
+    // Assert
+    assertThat(target.getApproved()).isTrue();
+    verify(publisher).publish(target);
+    verify(repository, never()).findFirstByApprovedIsNullOrderByIntervalStartAsc();
+  }
+
+  @Test
+  void rejectCurrentPendingByMridTargetsThatExactEvent() {
+    // Arrange
+    DerEvent target = withId(1, event("mrid-1", null));
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.of(target));
+    given(repository.save(target)).willReturn(target);
+
+    // Act
+    service().rejectCurrentPending("mrid-1");
+
+    // Assert
+    assertThat(target.getApproved()).isFalse();
+    verify(publisher).publish(target);
+  }
+
+  @Test
+  void approveCurrentPendingWithNoMridFallsBackToNearestIntervalStart() {
+    // Arrange: no mrid on the command (fixed commands/{verb}/event_active/none topic shape has no
+    // slot for one) — resolve whichever still-undecided event is nearest its interval.start
+    DerEvent nearest = withId(1, event("mrid-1", null));
+    given(repository.findFirstByApprovedIsNullOrderByIntervalStartAsc())
+        .willReturn(Optional.of(nearest));
+    given(repository.save(nearest)).willReturn(nearest);
+
+    // Act
+    service().approveCurrentPending(null);
+
+    // Assert
+    assertThat(nearest.getApproved()).isTrue();
+    verify(publisher).publish(nearest);
+  }
+
+  @Test
+  void decideCurrentPendingIsANoOpWhenNothingResolves() {
+    // Arrange: no mrid given, nothing currently undecided
+    given(repository.findFirstByApprovedIsNullOrderByIntervalStartAsc())
+        .willReturn(Optional.empty());
+
+    // Act
+    service().approveCurrentPending(null);
+
+    // Assert
+    verify(publisher, never()).publish(any());
+  }
+
+  private static DerEvent event(String mrid, Boolean approved) {
+    DerEvent event =
+        new DerEvent(
+            mrid, DerControlStatus.SCHEDULED, START, 3600L, null, null, null, null, "{}", "lfdi-1");
+    event.setApproved(approved);
+    return event;
+  }
+
+  @Test
   void findByStatusReturnsMatchingEvents() {
     // Arrange
     DerEvent a =
