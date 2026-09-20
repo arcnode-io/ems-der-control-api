@@ -4,16 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerControlStatus;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DispatchMode;
+import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.eclipse.paho.mqttv5.client.MqttClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,10 +49,17 @@ class DispatchPublisherTest {
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;
+  @Mock private DispatchSettingsService dispatchSettings;
   @Captor private ArgumentCaptor<byte[]> payload;
 
+  @BeforeEach
+  void defaultToAutoMode() {
+    given(dispatchSettings.currentMode()).willReturn(DispatchMode.AUTO);
+  }
+
   private DispatchPublisher publisher() {
-    return new DispatchPublisher(mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC));
+    return new DispatchPublisher(
+        mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), dispatchSettings);
   }
 
   private static DerEvent event(Double targetW, Boolean energize, DerControlStatus status) {
@@ -191,5 +202,32 @@ class DispatchPublisherTest {
 
     // Assert
     verify(mqtt, never()).publish(startsWith(ENVELOPE_BASE), any(), eq(0), eq(true));
+  }
+
+  @Test
+  void alwaysPublishesDispatchStateAsEnumSample() throws Exception {
+    // Arrange
+    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("ACTIVE");
+  }
+
+  @Test
+  void dispatchStateReflectsManualModePendingWhenNoDecisionYet() throws Exception {
+    // Arrange
+    given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
+    DerEvent e = event(null, null, DerControlStatus.SCHEDULED);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("PENDING");
   }
 }

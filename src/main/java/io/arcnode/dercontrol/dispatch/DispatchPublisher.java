@@ -2,9 +2,13 @@ package io.arcnode.dercontrol.dispatch;
 
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DispatchMode;
+import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import io.arcnode.dercontrol.dispatch.dto.BooleanSample;
+import io.arcnode.dercontrol.dispatch.dto.EnumSample;
 import io.arcnode.dercontrol.dispatch.dto.FloatSample;
 import java.time.Clock;
+import java.time.Instant;
 import org.eclipse.paho.mqttv5.client.MqttClient;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.Logger;
@@ -19,9 +23,10 @@ import tools.jackson.databind.json.JsonMapper;
  * plus the site's {@code operating_envelope} device when the same DERControlBase payload carried
  * envelope-mode limits (opModImpLimW/opModExpLimW) alongside or instead of a target-mode setpoint.
  *
- * <p>Every ingested event publishes {@code event_active}. {@code target_active_power}, {@code
- * energize_enabled}, {@code import_limit}, and {@code export_limit} each publish only when the
- * DERControlBase carried that control.
+ * <p>Every ingested event publishes {@code event_active} and {@code dispatch_state} (ADR-002 §16 —
+ * reflects the site's current {@link DispatchMode}, not just the utility's raw status). {@code
+ * target_active_power}, {@code energize_enabled}, {@code import_limit}, and {@code export_limit}
+ * each publish only when the DERControlBase carried that control.
  */
 @Component
 public class DispatchPublisher {
@@ -37,23 +42,37 @@ public class DispatchPublisher {
   private final JsonMapper mapper;
   private final Config config;
   private final Clock clock;
+  private final DispatchSettingsService dispatchSettings;
 
-  public DispatchPublisher(MqttClient mqtt, JsonMapper mapper, Config config, Clock clock) {
+  public DispatchPublisher(
+      MqttClient mqtt,
+      JsonMapper mapper,
+      Config config,
+      Clock clock,
+      DispatchSettingsService dispatchSettings) {
     this.mqtt = mqtt;
     this.mapper = mapper;
     this.config = config;
     this.clock = clock;
+    this.dispatchSettings = dispatchSettings;
   }
 
   /** Publish the setpoint + status + envelope channels for one event. */
   public void publish(DerEvent event) {
     String ts = clock.instant().toString();
+    Instant now = clock.instant();
+    DispatchMode mode = dispatchSettings.currentMode();
 
     Double targetActivePowerW = event.getTargetActivePowerW();
     if (targetActivePowerW != null) {
       send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
     }
-    send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive()));
+    send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
+    send(
+        DEVICE_ID,
+        "dispatch_state",
+        "none",
+        new EnumSample(ts, event.dispatchState(mode, now).name()));
     Boolean energize = event.getEnergize();
     if (energize != null) {
       send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));

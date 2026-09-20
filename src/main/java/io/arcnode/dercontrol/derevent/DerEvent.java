@@ -51,6 +51,12 @@ public class DerEvent {
   /** opModExpLimW — absent unless the utility sent envelope-mode control. */
   @Column private @Nullable Double exportLimitW;
 
+  /**
+   * An operator's approve/reject decision (ADR-002 §16) — {@code null} means "no decision yet."
+   * Auto mode never sets this; {@link #dispatchState} treats null as "proceed" outside manual mode.
+   */
+  @Column private @Nullable Boolean approved;
+
   @Column(nullable = false, updatable = false)
   private Instant receivedAt;
 
@@ -91,9 +97,52 @@ public class DerEvent {
     this.receivedAt = Instant.now();
   }
 
-  /** True when the event is currently commanding the DER — the {@code event_active} channel. */
-  public boolean isActive() {
-    return status == DerControlStatus.ACTIVE;
+  /**
+   * Where this event sits in the dispatch pipeline (ADR-002 §16): utility withdrawal
+   * (cancelled/superseded) always wins; explicit rejection is terminal; manual mode with no
+   * decision yet is pending; otherwise ACTIVE requires both the utility's own status saying ACTIVE
+   * and the interval being open — 2030.5 servers retransmit status=Active when an interval opens,
+   * so wall-clock time alone can't be trusted to self-declare activeness.
+   *
+   * @param mode site dispatch policy (ADR-002 §16)
+   * @param now wall-clock instant to compare against {@code interval.start}
+   * @return the state to publish
+   */
+  public DispatchState dispatchState(DispatchMode mode, Instant now) {
+    if (status == DerControlStatus.CANCELLED || status == DerControlStatus.SUPERSEDED) {
+      return DispatchState.IDLE;
+    }
+    if (Boolean.FALSE.equals(approved)) {
+      return DispatchState.REJECTED;
+    }
+    if (mode == DispatchMode.MANUAL && approved == null) {
+      return DispatchState.PENDING;
+    }
+    boolean intervalOpen = !now.isBefore(intervalStart);
+    return status == DerControlStatus.ACTIVE && intervalOpen
+        ? DispatchState.ACTIVE
+        : DispatchState.ARMED;
+  }
+
+  /**
+   * True when {@link #dispatchState} resolves to {@link DispatchState#ACTIVE} — the {@code
+   * event_active} channel. Post-policy: reflects approval and interval timing, not just the
+   * utility's raw status field.
+   *
+   * @param mode site dispatch policy (ADR-002 §16)
+   * @param now wall-clock instant to compare against {@code interval.start}
+   * @return whether the event is actually in force right now
+   */
+  public boolean isActive(DispatchMode mode, Instant now) {
+    return dispatchState(mode, now) == DispatchState.ACTIVE;
+  }
+
+  public @Nullable Boolean getApproved() {
+    return approved;
+  }
+
+  public void setApproved(@Nullable Boolean approved) {
+    this.approved = approved;
   }
 
   public Long getId() {
