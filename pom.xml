@@ -120,6 +120,13 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- polling assertions for MirrorCrossRepoIT's real-container-log wait -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.3.0</version>
+      <scope>test</scope>
+    </dependency>
     <!-- @ServiceConnection wiring + real Postgres for *IT (testcontainer analog) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
