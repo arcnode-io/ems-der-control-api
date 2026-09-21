@@ -7,6 +7,8 @@ local:
   mqttBrokerUrl: tcp://localhost:1883
   mqttUsername: arcnode_der_control_api
   siteId: site_001
+  # mock-derms-dispatch-api's own local default port — not a real utility, see its own readme.
+  utilityMirrorUrl: http://localhost:8081
 
 beta:
   logLevel: INFO
@@ -17,3 +19,7 @@ beta:
   mqttBrokerUrl: tcp://hivemq:1883
   mqttUsername: arcnode_der_control_api
   siteId: arcnode_beta
+  # Placeholder — mock-derms-dispatch-api isn't in platform-api's compose stacks (it's not a real
+  # deployed service, it stands in for an external utility). Real value TBD once/if this gets a
+  # real beta target.
+  utilityMirrorUrl: http://mock-derms-dispatch-api:8080

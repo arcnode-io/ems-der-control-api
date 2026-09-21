@@ -40,7 +40,8 @@ class DeliveryShortfallMonitorTest {
           "localhost",
           "tcp://localhost:1883",
           "arcnode_der_control_api",
-          "site_001");
+          "site_001",
+          "http://localhost:8081");
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;

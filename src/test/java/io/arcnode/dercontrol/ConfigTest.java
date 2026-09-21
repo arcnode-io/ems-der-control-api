@@ -70,7 +70,8 @@ class ConfigTest {
             "localhost",
             "tcp://localhost:1883",
             "u",
-            "site_001");
+            "site_001",
+            "http://localhost:8081");
 
     // Act
     var violations = validator.validate(bad);

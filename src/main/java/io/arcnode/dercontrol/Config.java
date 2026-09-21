@@ -32,6 +32,9 @@ import org.yaml.snakeyaml.Yaml;
  * @param mqttUsername broker File-RBAC identity ({@code arcnode_der_control_api}); password is a
  *     secret
  * @param siteId site slug for the {@code sites/{siteId}/devices/...} topic prefix
+ * @param utilityMirrorUrl base URL of the utility's own {@code MirrorUsagePoint} intake — config
+ *     (not a compile-time constant) both for WireMock testability and because a real deployment
+ *     points this at a real utility, not always the same target
  */
 @ConfigurationProperties(prefix = "app")
 @Validated
@@ -43,7 +46,8 @@ public record Config(
     @NotBlank String postgresHost,
     @NotBlank String mqttBrokerUrl,
     @NotBlank String mqttUsername,
-    @NotBlank String siteId) {
+    @NotBlank String siteId,
+    @NotBlank String utilityMirrorUrl) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {
