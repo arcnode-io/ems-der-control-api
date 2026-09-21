@@ -32,6 +32,12 @@
     <dependency-check.version>13.0.0</dependency-check.version>
     <!-- Boot 4.1.1 manages 11.0.24, which carries known CVEs; 11.0.25 fixes them. -->
     <tomcat.version>11.0.25</tomcat.version>
+    <!-- JAXB codegen against the real IEEE 2030.5 schema (src/main/resources/xsd/sep.xsd) for the
+         MirrorUsagePoint compliance-reporting path — versions confirmed directly against Maven
+         Central, not assumed. jakarta.xml.bind-api/jaxb-runtime removed from the JDK since 11. -->
+    <jaxb-maven-plugin.version>4.0.9</jaxb-maven-plugin.version>
+    <jakarta.xml.bind.version>4.0.2</jakarta.xml.bind.version>
+    <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
   </properties>
 
   <dependencies>
@@ -71,6 +77,20 @@
       <groupId>org.eclipse.paho</groupId>
       <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
       <version>${paho.version}</version>
+    </dependency>
+
+    <!-- MirrorUsagePoint (IEEE 2030.5 metering function set) — real XML, JAXB-generated from the
+         actual schema, never hand-written. -->
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>${jakarta.xml.bind.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>${jaxb-runtime.version}</version>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- OpenAPI: the @nestjs/swagger analog -->
@@ -119,6 +139,31 @@
 
   <build>
     <plugins>
+      <!-- Compiles src/main/resources/xsd/sep.xsd (the real IEEE 2030.5 schema, verified directly
+           against Maven Central + ZigBee/HomePlug's own schema file, not hand-copied field names)
+           into real JAXB classes at generate-sources. Producing schema-invalid XML becomes
+           structurally impossible rather than something to get right by eye. -->
+      <plugin>
+        <groupId>org.jvnet.jaxb</groupId>
+        <artifactId>jaxb-maven-plugin</artifactId>
+        <version>${jaxb-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <schemaDirectory>${project.basedir}/src/main/resources/xsd</schemaDirectory>
+              <schemaIncludes>
+                <include>sep.xsd</include>
+              </schemaIncludes>
+              <generatePackage>io.arcnode.dercontrol.mirror.ieee20305</generatePackage>
+              <generateDirectory>${project.build.directory}/generated-sources/jaxb</generateDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Force JDK 21 for compile/test even when `mvn` itself runs on another JDK.
            Reads ~/.m2/toolchains.xml; Gradle / other tools never consult it. -->
       <plugin>
@@ -245,6 +290,11 @@
           <rulesets>
             <ruleset>pmd-ruleset.xml</ruleset>
           </rulesets>
+          <!-- Reason: JAXB-generated IEEE 2030.5 classes (src/main/resources/xsd/sep.xsd) aren't
+               our code and can't be "fixed" for style — PMD would otherwise scan all ~700 of them. -->
+          <excludeRoots>
+            <excludeRoot>${project.build.directory}/generated-sources/jaxb</excludeRoot>
+          </excludeRoots>
         </configuration>
         <executions>
           <execution>
@@ -305,6 +355,12 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco.version}</version>
         <configuration>
+          <!-- Reason: JAXB-generated IEEE 2030.5 classes are never going to be unit-tested field
+               by field — they're compiled schema, not logic we wrote. Excluding them from coverage
+               instead of writing meaningless tests to hit the 70% denominator. -->
+          <excludes>
+            <exclude>io/arcnode/dercontrol/mirror/ieee20305/**</exclude>
+          </excludes>
           <rules>
             <rule>
               <element>BUNDLE</element>

@@ -8,4 +8,8 @@
   <Match>
     <Class name="~.*\.DerEvent"/>
   </Match>
+  <!-- JAXB-generated IEEE 2030.5 classes (src/main/resources/xsd/sep.xsd) aren't our code. -->
+  <Match>
+    <Class name="~io\.arcnode\.dercontrol\.mirror\.ieee20305\..*"/>
+  </Match>
 </FindBugsFilter>

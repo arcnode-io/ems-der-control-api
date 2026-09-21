@@ -31,7 +31,17 @@ public record ClientIdentity(String lfdi, long sfdi) {
    * @throws IllegalArgumentException if the header doesn't decode to a parseable X.509 certificate
    */
   public static ClientIdentity fromHeaderValue(String urlEncodedPemHeader) {
-    String pem = URLDecoder.decode(urlEncodedPemHeader, StandardCharsets.UTF_8);
+    return fromPem(URLDecoder.decode(urlEncodedPemHeader, StandardCharsets.UTF_8));
+  }
+
+  /**
+   * Same derivation as {@link #fromHeaderValue}, for a plain (not URL-encoded) PEM — this service's
+   * own self-signed cert ({@link io.arcnode.dercontrol.mirror.DerDispatchIdentity}), not one
+   * presented by a caller.
+   *
+   * @throws IllegalArgumentException if the PEM doesn't decode to a parseable X.509 certificate
+   */
+  public static ClientIdentity fromPem(String pem) {
     byte[] lfdiBytes = lfdiBytes(parseCertificate(pem));
     return new ClientIdentity(HexFormat.of().formatHex(lfdiBytes), sfdiFromLfdiBytes(lfdiBytes));
   }
