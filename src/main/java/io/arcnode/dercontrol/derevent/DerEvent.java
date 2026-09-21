@@ -53,7 +53,7 @@ public class DerEvent {
 
   /**
    * An operator's approve/reject decision (ADR-002 §16) — {@code null} means "no decision yet."
-   * Auto mode never sets this; {@link #dispatchState} treats null as "proceed" outside manual mode.
+   * Auto mode never sets this; {@link #derEventState} treats null as "proceed" outside manual mode.
    */
   @Column private @Nullable Boolean approved;
 
@@ -108,24 +108,24 @@ public class DerEvent {
    * @param now wall-clock instant to compare against {@code interval.start}
    * @return the state to publish
    */
-  public DispatchState dispatchState(DispatchMode mode, Instant now) {
+  public DerEventState derEventState(DispatchMode mode, Instant now) {
     if (status == DerControlStatus.CANCELLED || status == DerControlStatus.SUPERSEDED) {
-      return DispatchState.IDLE;
+      return DerEventState.IDLE;
     }
     if (Boolean.FALSE.equals(approved)) {
-      return DispatchState.REJECTED;
+      return DerEventState.REJECTED;
     }
     if (mode == DispatchMode.MANUAL && approved == null) {
-      return DispatchState.PENDING;
+      return DerEventState.PENDING;
     }
     boolean intervalOpen = !now.isBefore(intervalStart);
     return status == DerControlStatus.ACTIVE && intervalOpen
-        ? DispatchState.ACTIVE
-        : DispatchState.ARMED;
+        ? DerEventState.ACTIVE
+        : DerEventState.ARMED;
   }
 
   /**
-   * True when {@link #dispatchState} resolves to {@link DispatchState#ACTIVE} — the {@code
+   * True when {@link #derEventState} resolves to {@link DerEventState#ACTIVE} — the {@code
    * event_active} channel. Post-policy: reflects approval and interval timing, not just the
    * utility's raw status field.
    *
@@ -134,7 +134,7 @@ public class DerEvent {
    * @return whether the event is actually in force right now
    */
   public boolean isActive(DispatchMode mode, Instant now) {
-    return dispatchState(mode, now) == DispatchState.ACTIVE;
+    return derEventState(mode, now) == DerEventState.ACTIVE;
   }
 
   public @Nullable Boolean getApproved() {

@@ -27,9 +27,12 @@ import tools.jackson.databind.json.JsonMapper;
  * and {@code event_active} (both already published by {@link DispatchPublisher}) plus a new {@code
  * actual_active_power} (published by the gateway — the site-level real delivered power) and, once a
  * persistent gap survives {@link #SHORTFALL_THRESHOLD_TICKS} consecutive samples, publishes {@code
- * dispatch_shortfall} — orthogonal to {@code dispatch_state}, since a physical shortfall is a
- * delivery concern, not a policy/authorization one. Needs no topology awareness: every input is a
- * fixed, well-known channel on the virtual der_dispatch device.
+ * dispatch_shortfall} (under-delivery) or {@code dispatch_overdelivery} (over-delivery) — tracked
+ * and published independently, not one signed signal, since over-delivery (e.g. exceeding an export
+ * cap) can be the more safety-relevant direction and shouldn't be buried under "shortfall." Both
+ * are orthogonal to {@code der_event_state}: a physical delivery gap is not a policy/ authorization
+ * concern. Needs no topology awareness: every input is a fixed, well-known channel on the virtual
+ * der_dispatch device.
  */
 @Component
 public class DeliveryShortfallMonitor {
@@ -58,6 +61,8 @@ public class DeliveryShortfallMonitor {
   private final AtomicBoolean eventActive = new AtomicBoolean();
   private final AtomicInteger consecutiveShortfalls = new AtomicInteger();
   private final AtomicBoolean currentlyShortfall = new AtomicBoolean();
+  private final AtomicInteger consecutiveOverdeliveries = new AtomicInteger();
+  private final AtomicBoolean currentlyOverdelivering = new AtomicBoolean();
 
   public DeliveryShortfallMonitor(
       MqttClient mqtt, Config config, JsonMapper mapper, DispatchPublisher publisher) {
@@ -104,6 +109,7 @@ public class DeliveryShortfallMonitor {
     eventActive.set(active);
     if (!active) {
       resetShortfall();
+      resetOverdelivery();
     }
   }
 
@@ -112,15 +118,25 @@ public class DeliveryShortfallMonitor {
     Double target = lastTarget.get();
     if (!eventActive.get() || target == null) {
       resetShortfall();
+      resetOverdelivery();
       return;
     }
-    if (Math.abs(target - actual) > SHORTFALL_TOLERANCE_WATTS) {
+    double gap = actual - target;
+    if (gap < -SHORTFALL_TOLERANCE_WATTS) {
+      resetOverdelivery();
       if (consecutiveShortfalls.incrementAndGet() >= SHORTFALL_THRESHOLD_TICKS
           && currentlyShortfall.compareAndSet(false, true)) {
         publisher.publishShortfall(true);
       }
+    } else if (gap > SHORTFALL_TOLERANCE_WATTS) {
+      resetShortfall();
+      if (consecutiveOverdeliveries.incrementAndGet() >= SHORTFALL_THRESHOLD_TICKS
+          && currentlyOverdelivering.compareAndSet(false, true)) {
+        publisher.publishOverdelivery(true);
+      }
     } else {
       resetShortfall();
+      resetOverdelivery();
     }
   }
 
@@ -128,6 +144,13 @@ public class DeliveryShortfallMonitor {
     consecutiveShortfalls.set(0);
     if (currentlyShortfall.compareAndSet(true, false)) {
       publisher.publishShortfall(false);
+    }
+  }
+
+  private void resetOverdelivery() {
+    consecutiveOverdeliveries.set(0);
+    if (currentlyOverdelivering.compareAndSet(true, false)) {
+      publisher.publishOverdelivery(false);
     }
   }
 

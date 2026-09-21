@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-/** Unit — pure derivation of {@link DispatchState} from event + mode + wall clock. AAA. */
-class DispatchStateTest {
+/** Unit — pure derivation of {@link DerEventState} from event + mode + wall clock. AAA. */
+class DerEventStateTest {
 
   private static final Instant START = Instant.parse("2026-09-08T14:00:00Z");
   private static final Instant BEFORE_START = START.minusSeconds(60);
@@ -24,7 +24,7 @@ class DispatchStateTest {
     event.setApproved(true);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.MANUAL, AFTER_START)).isEqualTo(DispatchState.IDLE);
+    assertThat(event.derEventState(DispatchMode.MANUAL, AFTER_START)).isEqualTo(DerEventState.IDLE);
   }
 
   @Test
@@ -33,7 +33,7 @@ class DispatchStateTest {
     DerEvent event = event(DerControlStatus.SUPERSEDED);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DispatchState.IDLE);
+    assertThat(event.derEventState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DerEventState.IDLE);
   }
 
   @Test
@@ -43,8 +43,8 @@ class DispatchStateTest {
     event.setApproved(false);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.MANUAL, AFTER_START))
-        .isEqualTo(DispatchState.REJECTED);
+    assertThat(event.derEventState(DispatchMode.MANUAL, AFTER_START))
+        .isEqualTo(DerEventState.REJECTED);
   }
 
   @Test
@@ -53,8 +53,8 @@ class DispatchStateTest {
     DerEvent event = event(DerControlStatus.SCHEDULED);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.MANUAL, BEFORE_START))
-        .isEqualTo(DispatchState.PENDING);
+    assertThat(event.derEventState(DispatchMode.MANUAL, BEFORE_START))
+        .isEqualTo(DerEventState.PENDING);
   }
 
   @Test
@@ -63,7 +63,7 @@ class DispatchStateTest {
     DerEvent event = event(DerControlStatus.SCHEDULED);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.AUTO, BEFORE_START)).isEqualTo(DispatchState.ARMED);
+    assertThat(event.derEventState(DispatchMode.AUTO, BEFORE_START)).isEqualTo(DerEventState.ARMED);
   }
 
   @Test
@@ -73,8 +73,8 @@ class DispatchStateTest {
     event.setApproved(true);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.MANUAL, BEFORE_START))
-        .isEqualTo(DispatchState.ARMED);
+    assertThat(event.derEventState(DispatchMode.MANUAL, BEFORE_START))
+        .isEqualTo(DerEventState.ARMED);
   }
 
   @Test
@@ -84,8 +84,8 @@ class DispatchStateTest {
     event.setApproved(true);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.MANUAL, AFTER_START))
-        .isEqualTo(DispatchState.ACTIVE);
+    assertThat(event.derEventState(DispatchMode.MANUAL, AFTER_START))
+        .isEqualTo(DerEventState.ACTIVE);
   }
 
   @Test
@@ -94,7 +94,7 @@ class DispatchStateTest {
     DerEvent event = event(DerControlStatus.ACTIVE);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DispatchState.ACTIVE);
+    assertThat(event.derEventState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DerEventState.ACTIVE);
   }
 
   @Test
@@ -106,11 +106,11 @@ class DispatchStateTest {
     DerEvent event = event(DerControlStatus.SCHEDULED);
 
     // Act / Assert
-    assertThat(event.dispatchState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DispatchState.ARMED);
+    assertThat(event.derEventState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DerEventState.ARMED);
   }
 
   @Test
-  void isActiveDerivesFromDispatchState() {
+  void isActiveDerivesFromDerEventState() {
     // Arrange
     DerEvent event = event(DerControlStatus.ACTIVE);
 

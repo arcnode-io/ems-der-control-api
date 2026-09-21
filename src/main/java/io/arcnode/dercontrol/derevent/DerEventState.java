@@ -3,10 +3,12 @@ package io.arcnode.dercontrol.derevent;
 /**
  * Where one DER event sits in der-control-api's own dispatch pipeline — distinct from {@link
  * DerControlStatus}, which is the utility's lifecycle field. Published on the {@code
- * dispatch_state} channel; names match the template's {@code values:} labels exactly (ground truth:
- * edp-api's dispatch_state measurement).
+ * der_event_state} channel (named to avoid colliding with ems-industrial-gateway's own {@code
+ * events/dispatch_state}, a generic per-command execution ack — a different concept entirely, not
+ * this DER-specific lifecycle state); names match the template's {@code values:} labels exactly
+ * (ground truth: edp-api's der_event_state measurement).
  */
-public enum DispatchState {
+public enum DerEventState {
   /** The utility withdrew the event (cancelled/superseded) — nothing in force. */
   IDLE,
   /** Manual mode, ingested, awaiting an operator's approve/reject command. */

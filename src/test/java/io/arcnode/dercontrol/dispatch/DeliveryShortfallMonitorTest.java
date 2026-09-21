@@ -157,6 +157,53 @@ class DeliveryShortfallMonitorTest {
 
     // Assert
     verify(publisher, timeout(500).times(0)).publishShortfall(true);
+    verify(publisher, timeout(500).times(0)).publishOverdelivery(true);
+  }
+
+  @Test
+  void publishesOverdeliveryAfterThresholdConsecutiveGaps() throws Exception {
+    // Arrange: event active, target 1000W, actual repeatedly far above target — a distinct
+    // signal from under-delivery, since over-export can be the more dangerous direction
+    DeliveryShortfallMonitor monitor = monitor();
+    monitor.subscribe();
+    verify(mqtt).subscribe(subscriptions.capture(), listeners.capture());
+    IMqttMessageListener targetListener = listeners.getValue()[0];
+    IMqttMessageListener eventActiveListener = listeners.getValue()[1];
+    IMqttMessageListener actualListener = listeners.getValue()[2];
+    targetListener.messageArrived(TARGET_TOPIC, sample(1000.0));
+    eventActiveListener.messageArrived(EVENT_ACTIVE_TOPIC, sample(true));
+
+    // Act: three consecutive large over-deliveries
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+
+    // Assert
+    verify(publisher, timeout(1000)).publishOverdelivery(true);
+    verify(publisher, timeout(500).times(0)).publishShortfall(true);
+  }
+
+  @Test
+  void resetsOverdeliveryWhenDeliveryRecovers() throws Exception {
+    // Arrange: already over-delivering
+    DeliveryShortfallMonitor monitor = monitor();
+    monitor.subscribe();
+    verify(mqtt).subscribe(subscriptions.capture(), listeners.capture());
+    IMqttMessageListener targetListener = listeners.getValue()[0];
+    IMqttMessageListener eventActiveListener = listeners.getValue()[1];
+    IMqttMessageListener actualListener = listeners.getValue()[2];
+    targetListener.messageArrived(TARGET_TOPIC, sample(1000.0));
+    eventActiveListener.messageArrived(EVENT_ACTIVE_TOPIC, sample(true));
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(2000.0));
+    verify(publisher, timeout(1000)).publishOverdelivery(true);
+
+    // Act: delivery recovers to within tolerance
+    actualListener.messageArrived(ACTUAL_TOPIC, sample(1000.0));
+
+    // Assert
+    verify(publisher, timeout(1000)).publishOverdelivery(false);
   }
 
   @Test

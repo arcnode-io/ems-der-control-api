@@ -205,7 +205,7 @@ class DispatchPublisherTest {
   }
 
   @Test
-  void alwaysPublishesDispatchStateAsEnumSample() throws Exception {
+  void alwaysPublishesDerEventStateAsEnumSample() throws Exception {
     // Arrange
     DerEvent e = event(null, null, DerControlStatus.ACTIVE);
 
@@ -213,12 +213,12 @@ class DispatchPublisherTest {
     publisher().publish(e);
 
     // Assert
-    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
+    verify(mqtt).publish(eq(BASE + "der_event_state/none"), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("ACTIVE");
   }
 
   @Test
-  void dispatchStateReflectsManualModePendingWhenNoDecisionYet() throws Exception {
+  void derEventStateReflectsManualModePendingWhenNoDecisionYet() throws Exception {
     // Arrange
     given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
     DerEvent e = event(null, null, DerControlStatus.SCHEDULED);
@@ -227,7 +227,7 @@ class DispatchPublisherTest {
     publisher().publish(e);
 
     // Assert
-    verify(mqtt).publish(eq(BASE + "dispatch_state/none"), payload.capture(), eq(0), eq(true));
+    verify(mqtt).publish(eq(BASE + "der_event_state/none"), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("PENDING");
   }
 }

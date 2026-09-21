@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
  * plus the site's {@code operating_envelope} device when the same DERControlBase payload carried
  * envelope-mode limits (opModImpLimW/opModExpLimW) alongside or instead of a target-mode setpoint.
  *
- * <p>Every ingested event publishes {@code event_active} and {@code dispatch_state} (ADR-002 §16 —
+ * <p>Every ingested event publishes {@code event_active} and {@code der_event_state} (ADR-002 §16 —
  * reflects the site's current {@link DispatchMode}, not just the utility's raw status). {@code
  * target_active_power}, {@code energize_enabled}, {@code import_limit}, and {@code export_limit}
  * each publish only when the DERControlBase carried that control.
@@ -70,9 +70,9 @@ public class DispatchPublisher {
     send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
     send(
         DEVICE_ID,
-        "dispatch_state",
+        "der_event_state",
         "none",
-        new EnumSample(ts, event.dispatchState(mode, now).name()));
+        new EnumSample(ts, event.derEventState(mode, now).name()));
     Boolean energize = event.getEnergize();
     if (energize != null) {
       send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));
@@ -93,8 +93,11 @@ public class DispatchPublisher {
   }
 
   /**
-   * Publishes sustained non-delivery detection (Phase III) — orthogonal to {@code dispatch_state},
-   * since a physical shortfall is a delivery concern, not a policy/authorization one.
+   * Publishes sustained under-delivery detection (Phase III) — orthogonal to {@code
+   * der_event_state}, since a physical shortfall is a delivery concern, not a policy/authorization
+   * one. Kept as a separate channel from {@link #publishOverdelivery}, not one signed signal —
+   * over-delivery (e.g. exceeding an export cap) can be the more dangerous direction and deserves
+   * its own name, not to be buried under "shortfall."
    */
   public void publishShortfall(boolean shortfall) {
     send(
@@ -102,6 +105,15 @@ public class DispatchPublisher {
         "dispatch_shortfall",
         "none",
         new BooleanSample(clock.instant().toString(), shortfall));
+  }
+
+  /** Publishes sustained over-delivery detection (Phase III) — see {@link #publishShortfall}. */
+  public void publishOverdelivery(boolean overdelivering) {
+    send(
+        DEVICE_ID,
+        "dispatch_overdelivery",
+        "none",
+        new BooleanSample(clock.instant().toString(), overdelivering));
   }
 
   private void send(String deviceId, String measurement, String unit, Object sample) {
