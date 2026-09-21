@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import io.arcnode.dercontrol.AbstractBrokerIT;
 import io.arcnode.dercontrol.TestcontainersConfiguration;
-import java.io.File;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,22 +17,30 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Real cross-repo proof, matching ems-industrial-gateway's own dispatch_test.rs pattern (real
- * broker + a real sibling-service container, never a stub): builds mock-derms-dispatch-api's actual
- * image from its own Dockerfile and runs it for real, on its own network with its own broker (it
- * never talks MQTT to der-control-api — the two services only ever talk over this HTTP path).
- * WireMock-based tests (MirrorUsagePointClientIT) prove der-control-api sends the right request;
- * this proves a genuinely separate, independently-generated JAXB implementation of the same schema
- * can actually parse it — exactly the risk a stub cannot catch.
+ * broker + a real sibling-service container, never a stub): pulls mock-derms-dispatch-api's actual
+ * published image ({@code public.ecr.aws/y1d2j6a8/mock-derms-dispatch-api}, pushed by its own CI on
+ * every push to main — confirmed public/anonymous-pullable) and runs it for real, on its own
+ * network with its own broker (it never talks MQTT to der-control-api — the two services only ever
+ * talk over this HTTP path). Deliberately not built from a local sibling checkout via {@code
+ * ImageFromDockerfile}: that only works when a developer happens to have both repos checked out as
+ * siblings, and this project's own CI runner has no such guarantee (a shell executor, not a per-job
+ * isolated checkout) — pulling the published image works identically in both places, and tests
+ * against what's actually deployed rather than a local working copy. WireMock-based tests
+ * (MirrorUsagePointClientIT) prove der-control-api sends the right request; this proves a genuinely
+ * separate, independently-generated JAXB implementation of the same schema can actually parse it —
+ * exactly the risk a stub cannot catch.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Testcontainers(disabledWithoutDocker = true)
 class MirrorCrossRepoIT extends AbstractBrokerIT {
+
+  private static final String MOCK_DERMS_DISPATCH_API_IMAGE =
+      "public.ecr.aws/y1d2j6a8/mock-derms-dispatch-api:latest";
 
   private static final Network NETWORK = Network.newNetwork();
   private static final GenericContainer<?> MOCK_DERMS_BROKER =
@@ -47,9 +54,7 @@ class MirrorCrossRepoIT extends AbstractBrokerIT {
     }
     MOCK_DERMS_BROKER.start();
     mockDermsDispatchApi =
-        new GenericContainer<>(
-                new ImageFromDockerfile()
-                    .withFileFromPath(".", new File("../mock-derms-dispatch-api").toPath()))
+        new GenericContainer<>(MOCK_DERMS_DISPATCH_API_IMAGE)
             .withNetwork(NETWORK)
             .withEnv("ENV", "beta")
             .withExposedPorts(8080)
