@@ -1,7 +1,7 @@
 package io.arcnode.dercontrol.mirror;
 
 import io.arcnode.dercontrol.Config;
-import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePoint;
+import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class MirrorUsagePointClient {
             .build();
   }
 
-  public void post(MirrorUsagePoint usagePoint) {
+  public void post(MirrorUsagePointElement usagePoint) {
     String xml = Ieee20305Xml.marshal(usagePoint);
     client
         .post()

@@ -5,7 +5,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePoint;
+import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,7 +47,8 @@ class MirrorReportPublisherTest {
     publisher().tick();
 
     // Assert
-    ArgumentCaptor<MirrorUsagePoint> captor = ArgumentCaptor.forClass(MirrorUsagePoint.class);
+    ArgumentCaptor<MirrorUsagePointElement> captor =
+        ArgumentCaptor.forClass(MirrorUsagePointElement.class);
     verify(client).post(captor.capture());
     org.assertj.core.api.Assertions.assertThat(
             captor.getValue().getMirrorMeterReading().get(0).getReading().getValue())
@@ -64,7 +65,8 @@ class MirrorReportPublisherTest {
     publisher().tick();
 
     // Assert
-    ArgumentCaptor<MirrorUsagePoint> captor = ArgumentCaptor.forClass(MirrorUsagePoint.class);
+    ArgumentCaptor<MirrorUsagePointElement> captor =
+        ArgumentCaptor.forClass(MirrorUsagePointElement.class);
     verify(client).post(captor.capture());
     org.assertj.core.api.Assertions.assertThat(
             captor.getValue().getMirrorMeterReading().get(0).getReading().getValue())

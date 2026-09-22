@@ -17,6 +17,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -55,6 +56,11 @@ class MirrorCrossRepoIT extends AbstractBrokerIT {
     MOCK_DERMS_BROKER.start();
     mockDermsDispatchApi =
         new GenericContainer<>(MOCK_DERMS_DISPATCH_API_IMAGE)
+            // Reason: this image is tagged :latest and rebuilt on every push to that repo's main
+            // — without forcing a pull, Docker reuses whatever was last pulled, silently testing
+            // against a stale image (a shell-executor CI runner keeps a persistent Docker cache
+            // across pipeline runs too, not just local dev).
+            .withImagePullPolicy(PullPolicy.alwaysPull())
             .withNetwork(NETWORK)
             .withEnv("ENV", "beta")
             .withExposedPorts(8080)

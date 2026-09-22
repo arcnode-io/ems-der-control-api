@@ -1,7 +1,6 @@
 package io.arcnode.dercontrol.mirror;
 
-import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePoint;
-import io.arcnode.dercontrol.mirror.ieee20305.ObjectFactory;
+import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -16,25 +15,24 @@ import org.springframework.core.io.ClassPathResource;
 import org.xml.sax.SAXException;
 
 /**
- * Marshals a {@link MirrorUsagePoint} to real IEEE 2030.5 XML via JAXB classes generated directly
- * from {@code src/main/resources/xsd/sep.xsd}, and validates the result against that same schema —
- * producing schema-invalid XML is a compile error (wrong generated type) or a caught validation
- * failure here, never a silent wire-format mistake.
+ * Marshals a {@link MirrorUsagePointElement} to real IEEE 2030.5 XML via JAXB classes generated
+ * directly from {@code src/main/resources/xsd/sep.xsd}, and validates the result against that same
+ * schema — producing schema-invalid XML is a compile error (wrong generated type) or a caught
+ * validation failure here, never a silent wire-format mistake.
  */
 public final class Ieee20305Xml {
 
   private static final String SCHEMA_RESOURCE = "xsd/sep.xsd";
-  private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
 
   private Ieee20305Xml() {}
 
-  /** Marshals a {@code MirrorUsagePoint} as the XML document's root element. */
-  public static String marshal(MirrorUsagePoint usagePoint) {
+  /** Marshals a {@code MirrorUsagePointElement} as the XML document's root element. */
+  public static String marshal(MirrorUsagePointElement usagePoint) {
     try {
-      JAXBContext context = JAXBContext.newInstance(MirrorUsagePoint.class);
+      JAXBContext context = JAXBContext.newInstance(MirrorUsagePointElement.class);
       Marshaller marshaller = context.createMarshaller();
       StringWriter writer = new StringWriter();
-      marshaller.marshal(OBJECT_FACTORY.createMirrorUsagePoint(usagePoint), writer);
+      marshaller.marshal(usagePoint, writer);
       return writer.toString();
     } catch (JAXBException e) {
       throw new IllegalStateException("failed to marshal MirrorUsagePoint", e);

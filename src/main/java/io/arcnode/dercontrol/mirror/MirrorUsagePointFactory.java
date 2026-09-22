@@ -3,7 +3,7 @@ package io.arcnode.dercontrol.mirror;
 import io.arcnode.dercontrol.mirror.ieee20305.KindType;
 import io.arcnode.dercontrol.mirror.ieee20305.MRIDType;
 import io.arcnode.dercontrol.mirror.ieee20305.MirrorMeterReading;
-import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePoint;
+import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import io.arcnode.dercontrol.mirror.ieee20305.PowerOfTenMultiplierType;
 import io.arcnode.dercontrol.mirror.ieee20305.Reading;
 import io.arcnode.dercontrol.mirror.ieee20305.ReadingType;
@@ -36,6 +36,10 @@ public final class MirrorUsagePointFactory {
   // Reason: raw watts, no scaling — matches target_active_power/actual_active_power's own existing
   // convention elsewhere in this service.
   private static final byte MULTIPLIER_NONE = 0;
+  // Reason: matches sep.xsd's own root <xs:schema version="2.2">, not the schemaVer attribute's own
+  // (stale) XSD default of "2.1" — the spec prose says every top-level XML element SHALL include
+  // schemaVer, so this is set explicitly rather than left to an ambient default.
+  private static final String SCHEMA_VERSION = "2.2";
 
   private MirrorUsagePointFactory() {}
 
@@ -43,8 +47,9 @@ public final class MirrorUsagePointFactory {
    * @param activeWatts der_dispatch's actual measured active power — positive discharge, negative
    *     charge, matching bess_rack's own {@code active_power} convention
    */
-  public static MirrorUsagePoint build(long activeWatts) {
-    MirrorUsagePoint usagePoint = new MirrorUsagePoint();
+  public static MirrorUsagePointElement build(long activeWatts) {
+    MirrorUsagePointElement usagePoint = new MirrorUsagePointElement();
+    usagePoint.setSchemaVer(SCHEMA_VERSION);
     usagePoint.setDeviceLFDI(HexFormat.of().parseHex(DerDispatchIdentity.LFDI));
     usagePoint.setMRID(mrid(0));
     usagePoint.setRoleFlags(roleFlags());

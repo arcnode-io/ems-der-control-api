@@ -3,7 +3,7 @@ package io.arcnode.dercontrol.mirror;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePoint;
+import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +22,12 @@ class MirrorUsagePointFactoryTest {
     long activeWatts = 500_000L;
 
     // Act
-    MirrorUsagePoint usagePoint = MirrorUsagePointFactory.build(activeWatts);
+    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
     String xml = Ieee20305Xml.marshal(usagePoint);
 
     // Assert
     assertThatCode(() -> Ieee20305Xml.validate(xml)).doesNotThrowAnyException();
+    assertThat(usagePoint.getSchemaVer()).isEqualTo("2.2");
   }
 
   @Test
@@ -35,7 +36,7 @@ class MirrorUsagePointFactoryTest {
     long activeWatts = 500_000L;
 
     // Act
-    MirrorUsagePoint usagePoint = MirrorUsagePointFactory.build(activeWatts);
+    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
 
     // Assert
     assertThat(usagePoint.getDeviceLFDI())
@@ -56,7 +57,7 @@ class MirrorUsagePointFactoryTest {
     long chargingWatts = -250_000L;
 
     // Act
-    MirrorUsagePoint usagePoint = MirrorUsagePointFactory.build(chargingWatts);
+    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(chargingWatts);
 
     // Assert
     assertThat(usagePoint.getMirrorMeterReading().get(0).getReading().getValue())

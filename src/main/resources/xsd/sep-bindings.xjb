@@ -1,0 +1,521 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bindings version="3.0" xmlns="https://jakarta.ee/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <bindings schemaLocation="sep.xsd">
+    <bindings node="/xs:schema/xs:element[@name='AccountBalance']">
+      <class name="AccountBalanceElement"/>
+      <factoryMethod name="AccountBalanceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='AggregatedDevice']">
+      <class name="AggregatedDeviceElement"/>
+      <factoryMethod name="AggregatedDeviceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='AggregatedDeviceList']">
+      <class name="AggregatedDeviceListElement"/>
+      <factoryMethod name="AggregatedDeviceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='AggregationPriority']">
+      <class name="AggregationPriorityElement"/>
+      <factoryMethod name="AggregationPriorityElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingPeriod']">
+      <class name="BillingPeriodElement"/>
+      <factoryMethod name="BillingPeriodElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingPeriodList']">
+      <class name="BillingPeriodListElement"/>
+      <factoryMethod name="BillingPeriodListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingReading']">
+      <class name="BillingReadingElement"/>
+      <factoryMethod name="BillingReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingReadingList']">
+      <class name="BillingReadingListElement"/>
+      <factoryMethod name="BillingReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingReadingSet']">
+      <class name="BillingReadingSetElement"/>
+      <factoryMethod name="BillingReadingSetElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='BillingReadingSetList']">
+      <class name="BillingReadingSetListElement"/>
+      <factoryMethod name="BillingReadingSetListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Configuration']">
+      <class name="ConfigurationElement"/>
+      <factoryMethod name="ConfigurationElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ConsumptionTariffInterval']">
+      <class name="ConsumptionTariffIntervalElement"/>
+      <factoryMethod name="ConsumptionTariffIntervalElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ConsumptionTariffIntervalList']">
+      <class name="ConsumptionTariffIntervalListElement"/>
+      <factoryMethod name="ConsumptionTariffIntervalListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CreditRegister']">
+      <class name="CreditRegisterElement"/>
+      <factoryMethod name="CreditRegisterElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CreditRegisterList']">
+      <class name="CreditRegisterListElement"/>
+      <factoryMethod name="CreditRegisterListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CurrentDERControls']">
+      <class name="CurrentDERControlsElement"/>
+      <factoryMethod name="CurrentDERControlsElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CustomerAccount']">
+      <class name="CustomerAccountElement"/>
+      <factoryMethod name="CustomerAccountElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CustomerAccountList']">
+      <class name="CustomerAccountListElement"/>
+      <factoryMethod name="CustomerAccountListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CustomerAgreement']">
+      <class name="CustomerAgreementElement"/>
+      <factoryMethod name="CustomerAgreementElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='CustomerAgreementList']">
+      <class name="CustomerAgreementListElement"/>
+      <factoryMethod name="CustomerAgreementListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DER']">
+      <class name="DERElement"/>
+      <factoryMethod name="DERElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERAvailability']">
+      <class name="DERAvailabilityElement"/>
+      <factoryMethod name="DERAvailabilityElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERCapability']">
+      <class name="DERCapabilityElement"/>
+      <factoryMethod name="DERCapabilityElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERComponent']">
+      <class name="DERComponentElement"/>
+      <factoryMethod name="DERComponentElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERComponentList']">
+      <class name="DERComponentListElement"/>
+      <factoryMethod name="DERComponentListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERControl']">
+      <class name="DERControlElement"/>
+      <factoryMethod name="DERControlElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERControlList']">
+      <class name="DERControlListElement"/>
+      <factoryMethod name="DERControlListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERControlResponse']">
+      <class name="DERControlResponseElement"/>
+      <factoryMethod name="DERControlResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERCurve']">
+      <class name="DERCurveElement"/>
+      <factoryMethod name="DERCurveElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERCurveList']">
+      <class name="DERCurveListElement"/>
+      <factoryMethod name="DERCurveListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERList']">
+      <class name="DERListElement"/>
+      <factoryMethod name="DERListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERProgram']">
+      <class name="DERProgramElement"/>
+      <factoryMethod name="DERProgramElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERProgramList']">
+      <class name="DERProgramListElement"/>
+      <factoryMethod name="DERProgramListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERSettings']">
+      <class name="DERSettingsElement"/>
+      <factoryMethod name="DERSettingsElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DERStatus']">
+      <class name="DERStatusElement"/>
+      <factoryMethod name="DERStatusElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DefaultDERControl']">
+      <class name="DefaultDERControlElement"/>
+      <factoryMethod name="DefaultDERControlElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DefaultDERControlResponse']">
+      <class name="DefaultDERControlResponseElement"/>
+      <factoryMethod name="DefaultDERControlResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DemandResponseProgram']">
+      <class name="DemandResponseProgramElement"/>
+      <factoryMethod name="DemandResponseProgramElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DemandResponseProgramList']">
+      <class name="DemandResponseProgramListElement"/>
+      <factoryMethod name="DemandResponseProgramListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DeviceCapability']">
+      <class name="DeviceCapabilityElement"/>
+      <factoryMethod name="DeviceCapabilityElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DeviceInformation']">
+      <class name="DeviceInformationElement"/>
+      <factoryMethod name="DeviceInformationElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DeviceStatus']">
+      <class name="DeviceStatusElement"/>
+      <factoryMethod name="DeviceStatusElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='DrResponse']">
+      <class name="DrResponseElement"/>
+      <factoryMethod name="DrResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='EndDevice']">
+      <class name="EndDeviceElement"/>
+      <factoryMethod name="EndDeviceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='EndDeviceControl']">
+      <class name="EndDeviceControlElement"/>
+      <factoryMethod name="EndDeviceControlElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='EndDeviceControlList']">
+      <class name="EndDeviceControlListElement"/>
+      <factoryMethod name="EndDeviceControlListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='EndDeviceList']">
+      <class name="EndDeviceListElement"/>
+      <factoryMethod name="EndDeviceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Error']">
+      <class name="ErrorElement"/>
+      <factoryMethod name="ErrorElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='File']">
+      <class name="FileElement"/>
+      <factoryMethod name="FileElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FileList']">
+      <class name="FileListElement"/>
+      <factoryMethod name="FileListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FileStatus']">
+      <class name="FileStatusElement"/>
+      <factoryMethod name="FileStatusElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FlowReservationRequest']">
+      <class name="FlowReservationRequestElement"/>
+      <factoryMethod name="FlowReservationRequestElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FlowReservationRequestList']">
+      <class name="FlowReservationRequestListElement"/>
+      <factoryMethod name="FlowReservationRequestListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FlowReservationResponse']">
+      <class name="FlowReservationResponseElement"/>
+      <factoryMethod name="FlowReservationResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FlowReservationResponseList']">
+      <class name="FlowReservationResponseListElement"/>
+      <factoryMethod name="FlowReservationResponseListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FlowReservationResponseResponse']">
+      <class name="FlowReservationResponseResponseElement"/>
+      <factoryMethod name="FlowReservationResponseResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FunctionSetAssignments']">
+      <class name="FunctionSetAssignmentsElement"/>
+      <factoryMethod name="FunctionSetAssignmentsElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='FunctionSetAssignmentsList']">
+      <class name="FunctionSetAssignmentsListElement"/>
+      <factoryMethod name="FunctionSetAssignmentsListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='HistoricalReading']">
+      <class name="HistoricalReadingElement"/>
+      <factoryMethod name="HistoricalReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='HistoricalReadingList']">
+      <class name="HistoricalReadingListElement"/>
+      <factoryMethod name="HistoricalReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='IPAddr']">
+      <class name="IPAddrElement"/>
+      <factoryMethod name="IPAddrElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='IPAddrList']">
+      <class name="IPAddrListElement"/>
+      <factoryMethod name="IPAddrListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='IPInterface']">
+      <class name="IPInterfaceElement"/>
+      <factoryMethod name="IPInterfaceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='IPInterfaceList']">
+      <class name="IPInterfaceListElement"/>
+      <factoryMethod name="IPInterfaceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LLInterface']">
+      <class name="LLInterfaceElement"/>
+      <factoryMethod name="LLInterfaceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LLInterfaceList']">
+      <class name="LLInterfaceListElement"/>
+      <factoryMethod name="LLInterfaceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LoadShedAvailability']">
+      <class name="LoadShedAvailabilityElement"/>
+      <factoryMethod name="LoadShedAvailabilityElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LoadShedAvailabilityList']">
+      <class name="LoadShedAvailabilityListElement"/>
+      <factoryMethod name="LoadShedAvailabilityListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LogEvent']">
+      <class name="LogEventElement"/>
+      <factoryMethod name="LogEventElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='LogEventList']">
+      <class name="LogEventListElement"/>
+      <factoryMethod name="LogEventListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MessagingProgram']">
+      <class name="MessagingProgramElement"/>
+      <factoryMethod name="MessagingProgramElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MessagingProgramList']">
+      <class name="MessagingProgramListElement"/>
+      <factoryMethod name="MessagingProgramListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MeterReading']">
+      <class name="MeterReadingElement"/>
+      <factoryMethod name="MeterReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MeterReadingList']">
+      <class name="MeterReadingListElement"/>
+      <factoryMethod name="MeterReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MirrorMeterReading']">
+      <class name="MirrorMeterReadingElement"/>
+      <factoryMethod name="MirrorMeterReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MirrorMeterReadingList']">
+      <class name="MirrorMeterReadingListElement"/>
+      <factoryMethod name="MirrorMeterReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MirrorUsagePoint']">
+      <class name="MirrorUsagePointElement"/>
+      <factoryMethod name="MirrorUsagePointElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='MirrorUsagePointList']">
+      <class name="MirrorUsagePointListElement"/>
+      <factoryMethod name="MirrorUsagePointListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Neighbor']">
+      <class name="NeighborElement"/>
+      <factoryMethod name="NeighborElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='NeighborList']">
+      <class name="NeighborListElement"/>
+      <factoryMethod name="NeighborListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Notification']">
+      <class name="NotificationElement"/>
+      <factoryMethod name="NotificationElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='NotificationList']">
+      <class name="NotificationListElement"/>
+      <factoryMethod name="NotificationListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PowerStatus']">
+      <class name="PowerStatusElement"/>
+      <factoryMethod name="PowerStatusElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PrepayOperationStatus']">
+      <class name="PrepayOperationStatusElement"/>
+      <factoryMethod name="PrepayOperationStatusElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Prepayment']">
+      <class name="PrepaymentElement"/>
+      <factoryMethod name="PrepaymentElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PrepaymentList']">
+      <class name="PrepaymentListElement"/>
+      <factoryMethod name="PrepaymentListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PriceResponse']">
+      <class name="PriceResponseElement"/>
+      <factoryMethod name="PriceResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PriceResponseCfg']">
+      <class name="PriceResponseCfgElement"/>
+      <factoryMethod name="PriceResponseCfgElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='PriceResponseCfgList']">
+      <class name="PriceResponseCfgListElement"/>
+      <factoryMethod name="PriceResponseCfgListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ProjectionReading']">
+      <class name="ProjectionReadingElement"/>
+      <factoryMethod name="ProjectionReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ProjectionReadingList']">
+      <class name="ProjectionReadingListElement"/>
+      <factoryMethod name="ProjectionReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ProxiedDevice']">
+      <class name="ProxiedDeviceElement"/>
+      <factoryMethod name="ProxiedDeviceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ProxiedDeviceList']">
+      <class name="ProxiedDeviceListElement"/>
+      <factoryMethod name="ProxiedDeviceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RPLInstance']">
+      <class name="RPLInstanceElement"/>
+      <factoryMethod name="RPLInstanceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RPLInstanceList']">
+      <class name="RPLInstanceListElement"/>
+      <factoryMethod name="RPLInstanceListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RPLSourceRoutes']">
+      <class name="RPLSourceRoutesElement"/>
+      <factoryMethod name="RPLSourceRoutesElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RPLSourceRoutesList']">
+      <class name="RPLSourceRoutesListElement"/>
+      <factoryMethod name="RPLSourceRoutesListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RateComponent']">
+      <class name="RateComponentElement"/>
+      <factoryMethod name="RateComponentElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='RateComponentList']">
+      <class name="RateComponentListElement"/>
+      <factoryMethod name="RateComponentListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Reading']">
+      <class name="ReadingElement"/>
+      <factoryMethod name="ReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ReadingList']">
+      <class name="ReadingListElement"/>
+      <factoryMethod name="ReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ReadingSet']">
+      <class name="ReadingSetElement"/>
+      <factoryMethod name="ReadingSetElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ReadingSetList']">
+      <class name="ReadingSetListElement"/>
+      <factoryMethod name="ReadingSetListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ReadingType']">
+      <class name="ReadingTypeElement"/>
+      <factoryMethod name="ReadingTypeElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Registration']">
+      <class name="RegistrationElement"/>
+      <factoryMethod name="RegistrationElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Response']">
+      <class name="ResponseElement"/>
+      <factoryMethod name="ResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ResponseList']">
+      <class name="ResponseListElement"/>
+      <factoryMethod name="ResponseListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ResponseSet']">
+      <class name="ResponseSetElement"/>
+      <factoryMethod name="ResponseSetElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ResponseSetList']">
+      <class name="ResponseSetListElement"/>
+      <factoryMethod name="ResponseSetListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SelfDevice']">
+      <class name="SelfDeviceElement"/>
+      <factoryMethod name="SelfDeviceElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='ServiceSupplier']">
+      <class name="ServiceSupplierElement"/>
+      <factoryMethod name="ServiceSupplierElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Subscription']">
+      <class name="SubscriptionElement"/>
+      <factoryMethod name="SubscriptionElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SubscriptionList']">
+      <class name="SubscriptionListElement"/>
+      <factoryMethod name="SubscriptionListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SupplyInterruptionOverride']">
+      <class name="SupplyInterruptionOverrideElement"/>
+      <factoryMethod name="SupplyInterruptionOverrideElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SupplyInterruptionOverrideList']">
+      <class name="SupplyInterruptionOverrideListElement"/>
+      <factoryMethod name="SupplyInterruptionOverrideListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SupportedLocale']">
+      <class name="SupportedLocaleElement"/>
+      <factoryMethod name="SupportedLocaleElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='SupportedLocaleList']">
+      <class name="SupportedLocaleListElement"/>
+      <factoryMethod name="SupportedLocaleListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TargetReading']">
+      <class name="TargetReadingElement"/>
+      <factoryMethod name="TargetReadingElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TargetReadingList']">
+      <class name="TargetReadingListElement"/>
+      <factoryMethod name="TargetReadingListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TariffProfile']">
+      <class name="TariffProfileElement"/>
+      <factoryMethod name="TariffProfileElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TariffProfileList']">
+      <class name="TariffProfileListElement"/>
+      <factoryMethod name="TariffProfileListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TextMessage']">
+      <class name="TextMessageElement"/>
+      <factoryMethod name="TextMessageElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TextMessageList']">
+      <class name="TextMessageListElement"/>
+      <factoryMethod name="TextMessageListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TextResponse']">
+      <class name="TextResponseElement"/>
+      <factoryMethod name="TextResponseElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='Time']">
+      <class name="TimeElement"/>
+      <factoryMethod name="TimeElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TimeTariffInterval']">
+      <class name="TimeTariffIntervalElement"/>
+      <factoryMethod name="TimeTariffIntervalElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='TimeTariffIntervalList']">
+      <class name="TimeTariffIntervalListElement"/>
+      <factoryMethod name="TimeTariffIntervalListElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='UsagePoint']">
+      <class name="UsagePointElement"/>
+      <factoryMethod name="UsagePointElement"/>
+    </bindings>
+    <bindings node="/xs:schema/xs:element[@name='UsagePointList']">
+      <class name="UsagePointListElement"/>
+      <factoryMethod name="UsagePointListElement"/>
+    </bindings>
+  </bindings>
+</bindings>

@@ -160,10 +160,12 @@
 
   <build>
     <plugins>
-      <!-- Compiles src/main/resources/xsd/sep.xsd (the real IEEE 2030.5 schema, verified directly
-           against Maven Central + ZigBee/HomePlug's own schema file, not hand-copied field names)
-           into real JAXB classes at generate-sources. Producing schema-invalid XML becomes
-           structurally impossible rather than something to get right by eye. -->
+      <!-- Compiles src/main/resources/xsd/sep.xsd (IEEE 2030.5-2023's own schema) into real JAXB
+           classes at generate-sources. Producing schema-invalid XML becomes structurally impossible
+           rather than something to get right by eye. sep-bindings.xjb resolves ObjectFactory
+           collisions between each resource's named complexType and its root element declaration
+           (e.g. MirrorUsagePoint the type vs. the schemaVer-carrying MirrorUsagePoint root element)
+           by giving the root element its own MirrorUsagePointElement class/factory method. -->
       <plugin>
         <groupId>org.jvnet.jaxb</groupId>
         <artifactId>jaxb-maven-plugin</artifactId>
