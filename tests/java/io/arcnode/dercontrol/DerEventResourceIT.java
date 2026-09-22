@@ -73,6 +73,49 @@ class DerEventResourceIT extends AbstractBrokerIT {
   }
 
   @Test
+  void retransmittingWithCompletedStatusClosesTheEventOverRealHttp() {
+    // Arrange: dispatch, then close via natural duration expiry (COMPLETED), not cancellation
+    String mrid = "mrid-completed";
+    rest.post()
+        .uri("/der-events")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
+        .body(VALID_BODY.formatted(mrid))
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    // Act: retransmit the same mrid with eventStatus=COMPLETED
+    rest.post()
+        .uri("/der-events")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
+        .body(
+            """
+            {
+              "mrid": "%s",
+              "eventStatus": "COMPLETED",
+              "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
+              "derControlBase": {}
+            }
+            """
+                .formatted(mrid))
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    // Assert
+    rest.get()
+        .uri("/der-events/{mrid}", mrid)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.status")
+        .isEqualTo("COMPLETED");
+  }
+
+  @Test
   void rejectsBodyMissingIntervalWith400() {
     rest.post()
         .uri("/der-events")

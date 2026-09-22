@@ -37,6 +37,15 @@ class DerEventStateTest {
   }
 
   @Test
+  void completedIsIdle() {
+    // Arrange
+    DerEvent event = event(DerControlStatus.COMPLETED);
+
+    // Act / Assert
+    assertThat(event.derEventState(DispatchMode.AUTO, AFTER_START)).isEqualTo(DerEventState.IDLE);
+  }
+
+  @Test
   void explicitlyRejectedIsRejectedEvenAfterStart() {
     // Arrange
     DerEvent event = event(DerControlStatus.ACTIVE);
