@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
@@ -19,6 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 /** Business logic for the DERControl ingest resource. */
 @Service
 public class DerEventService {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DerEventService.class);
 
   private final DerEventRepository repository;
   private final DispatchPublisher publisher;
@@ -59,6 +63,14 @@ public class DerEventService {
             .orElseGet(() -> fromRequest(request, lfdi));
 
     DerEvent saved = repository.save(event);
+    if (LOG.isInfoEnabled()) {
+      LOG.info(
+          "✅ Complying with DER dispatch: mrid={}, status={}, target={}W, energize={}",
+          saved.getMrid(),
+          saved.getStatus(),
+          saved.getTargetActivePowerW(),
+          saved.getEnergize());
+    }
     publisher.publish(saved);
     armFutureRepublish(saved);
     return DerEventResponse.from(saved);
