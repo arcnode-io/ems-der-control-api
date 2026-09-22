@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class MirrorReportPublisher {
 
-  // Reason: MVP placeholder, not spec'd by anyone — a compliance-reporting cadence, deliberately
-  // looser than EventOrchestrator-equivalent control-loop ticks elsewhere in this system (this is
-  // an audit signal, not a dispatch decision input). Tune once real reporting requirements exist.
-  private static final long POST_RATE_MILLIS = 30_000L;
+  // Reason: SunSpec's IEEE 2030.5 V2G-AC Profile (v1.0) recommends a 15s default postRate for
+  // MirrorUsagePoint — not pulled from thin air. https://sunspec.org/wp-content/uploads/2009/03/
+  // SunSpec-IEEE-2030.5-V2G-AC-Profile-v1.0.pdf
+  private static final long POST_RATE_MILLIS = 15_000L;
 
   private final ActualActivePowerSubscriber subscriber;
   private final MirrorUsagePointClient client;
