@@ -98,18 +98,21 @@ public class DerEvent {
   }
 
   /**
-   * Where this event sits in the dispatch pipeline (ADR-002 §16): utility withdrawal
-   * (cancelled/superseded) always wins; explicit rejection is terminal; manual mode with no
-   * decision yet is pending; otherwise ACTIVE requires both the utility's own status saying ACTIVE
-   * and the interval being open — 2030.5 servers retransmit status=Active when an interval opens,
-   * so wall-clock time alone can't be trusted to self-declare activeness.
+   * Where this event sits in the dispatch pipeline (ADR-002 §16): a terminal utility status
+   * (cancelled/superseded/completed — withdrawn or naturally concluded) always wins; explicit
+   * rejection is terminal; manual mode with no decision yet is pending; otherwise ACTIVE requires
+   * both the utility's own status saying ACTIVE and the interval being open — 2030.5 servers
+   * retransmit status=Active when an interval opens, so wall-clock time alone can't be trusted to
+   * self-declare activeness.
    *
    * @param mode site dispatch policy (ADR-002 §16)
    * @param now wall-clock instant to compare against {@code interval.start}
    * @return the state to publish
    */
   public DerEventState derEventState(DispatchMode mode, Instant now) {
-    if (status == DerControlStatus.CANCELLED || status == DerControlStatus.SUPERSEDED) {
+    if (status == DerControlStatus.CANCELLED
+        || status == DerControlStatus.SUPERSEDED
+        || status == DerControlStatus.COMPLETED) {
       return DerEventState.IDLE;
     }
     if (Boolean.FALSE.equals(approved)) {
