@@ -39,6 +39,7 @@
     <jaxb-maven-plugin.version>4.0.9</jaxb-maven-plugin.version>
     <jakarta.xml.bind.version>4.0.2</jakarta.xml.bind.version>
     <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
+    <download-maven-plugin.version>1.10.0</download-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -160,6 +161,61 @@
 
   <build>
     <plugins>
+      <!-- sep.xsd is IEEE-copyrighted: "you may not further copy, prepare, and/or distribute
+           copies of the Document, nor significant portions of the Document, in any form, without
+           prior written permission from IEEE." So it is NOT in source control (.gitignore'd) —
+           every build fetches its own copy from IEEE's own free download, which is exactly what
+           their terms permit. sha256-pinned so an upstream change fails the build loudly instead
+           of silently regenerating different bindings. -->
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>${download-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>fetch-ieee-20305-schema</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://standards.ieee.org/wp-content/uploads/2024/12/2030.5-2023_downloads.zip</url>
+              <sha256>44ef0bd26f59fee3d4a4be0951ec9d5985c6bc3f377dd8f4908f25675174d6d3</sha256>
+              <unpack>true</unpack>
+              <outputDirectory>${project.build.directory}/ieee-schema</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Places the fetched schema where jaxb-maven-plugin and the runtime classpath both already
+           expect it, so nothing else in the build had to change. The file lands in the jar as
+           before — only source control stops carrying it. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>place-ieee-20305-schema</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/src/main/resources/xsd</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/ieee-schema/2030.5-2023_downloads</directory>
+                  <includes>
+                    <include>sep.xsd</include>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Compiles src/main/resources/xsd/sep.xsd (IEEE 2030.5-2023's own schema) into real JAXB
            classes at generate-sources. Producing schema-invalid XML becomes structurally impossible
            rather than something to get right by eye. sep-bindings.xjb resolves ObjectFactory
@@ -170,6 +226,8 @@
         <groupId>org.jvnet.jaxb</groupId>
         <artifactId>jaxb-maven-plugin</artifactId>
         <version>${jaxb-maven-plugin.version}</version>
+        <!-- Runs after the two plugins above place sep.xsd; same phase, so POM order is what
+             sequences them. -->
         <executions>
           <execution>
             <goals>

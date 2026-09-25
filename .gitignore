@@ -19,3 +19,7 @@
 # secrets — never commit the filled-in file (template-secrets.env is the tracked list)
 secrets.env
 .env
+
+# IEEE 2030.5 schema — IEEE-copyrighted, must not be redistributed. Fetched from IEEE's own
+# free download at build time (see download-maven-plugin in pom.xml), never committed.
+src/main/resources/xsd/sep.xsd
