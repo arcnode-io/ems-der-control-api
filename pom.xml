@@ -265,6 +265,19 @@
         </executions>
       </plugin>
 
+      <!-- IEEE's terms don't permit redistributing sep.xsd, so it stays out of the published
+           artifact. Nothing at runtime needs it: JAXB bakes the schema's structure into generated
+           classes at compile time, and validate() runs only in tests, off the test classpath. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>xsd/sep.xsd</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
