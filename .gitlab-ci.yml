@@ -22,6 +22,10 @@ check:
       # pipx installs land in ~/.local/bin, not reliably on PATH for a non-interactive job.
       export PATH="$HOME/.local/bin:$PATH"
       command -v semgrep >/dev/null || pipx install semgrep
+    - |
+      # The cross-repo IT pulls a public ECR image anonymously. A stale login from any job on
+      # this shared runner would be offered instead and rejected, so clear it first.
+      docker logout public.ecr.aws >/dev/null 2>&1 || true
   script:
     - make checks MVNW="./mvnw -B --no-transfer-progress -t .ci-toolchains.xml"
     # one verify call — unit+integration coverage must land in the same jacoco.exec for the 70% gate
@@ -44,6 +48,11 @@ publish:
     - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
     - docker build -t public.ecr.aws/y1d2j6a8/ems-der-control-api .
     - docker push public.ecr.aws/y1d2j6a8/ems-der-control-api
+  # Reason: the runner is a shared shell executor, so a login left here becomes every other
+  # job's problem once the 12-hour token expires — Docker then presents the dead token instead
+  # of pulling anonymously. after_script runs even when the push fails.
+  after_script:
+    - docker logout public.ecr.aws
 
 mirror:
   stage: mirror
