@@ -29,6 +29,10 @@ public final class MirrorUsagePointFactory {
   private static final byte[] ROLE_FLAGS_MIRROR_AND_DER = {0x00, 0x09};
   // Reason: ServiceKind 0 = electricity, per sep.xsd.
   private static final short SERVICE_KIND_ELECTRICITY = 0;
+  // Reason: UsagePointBase::status 1 = on, per sep.xsd ("0 = off 1 = on"). JAXB generates status as
+  // a primitive short, so leaving it unset marshals a schema-valid 0 and reports the service as off
+  // while readings are actively being mirrored.
+  private static final short STATUS_ON = 1;
   // Reason: KindType 37 = Power, per sep.xsd's own documented UInt8 codes.
   private static final short KIND_POWER = 37;
   // Reason: UomType 38 = W (real power in watts), per sep.xsd.
@@ -54,6 +58,7 @@ public final class MirrorUsagePointFactory {
     usagePoint.setMRID(mrid(0));
     usagePoint.setRoleFlags(roleFlags());
     usagePoint.setServiceCategoryKind(serviceCategoryKind());
+    usagePoint.setStatus(STATUS_ON);
     usagePoint.getMirrorMeterReading().add(activePowerReading(activeWatts));
     return usagePoint;
   }

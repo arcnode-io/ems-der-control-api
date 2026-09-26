@@ -31,6 +31,20 @@ class MirrorUsagePointFactoryTest {
   }
 
   @Test
+  void reportsTheServiceAtThisUsagePointAsOn() {
+    // Arrange: sep.xsd's own UsagePointBase::status doc — "0 = off 1 = on". JAXB generates it as a
+    // primitive short, so an unset value marshals as a schema-valid 0, which would report the
+    // service as off while we are actively mirroring live readings.
+    long activeWatts = 500_000L;
+
+    // Act
+    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
+
+    // Assert
+    assertThat(usagePoint.getStatus()).isEqualTo((short) 1);
+  }
+
+  @Test
   void carriesThisServicesOwnLfdiAndTheActualWattsReading() {
     // Arrange
     long activeWatts = 500_000L;
