@@ -231,4 +231,44 @@ class DispatchPublisherTest {
     verify(mqtt).publish(eq(BASE + "der_event_state/none"), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("PENDING");
   }
+
+  @Test
+  void anEnvelopeOnlyControlLeavesDerDispatchAlone() throws Exception {
+    // Arrange: a standing operating envelope carries envelope modes and no setpoint. It is
+    // continuous, so publishing event_active for it would report a curtailment permanently in
+    // progress.
+    DerEvent envelope = event(null, null, 500_000.0, 0.0, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(envelope);
+
+    // Assert
+    verify(mqtt, never()).publish(startsWith(BASE), any(), eq(0), eq(true));
+  }
+
+  @Test
+  void anEnvelopeOnlyControlStillPublishesBothEnvelopeChannels() throws Exception {
+    // Arrange
+    DerEvent envelope = event(null, null, 500_000.0, 0.0, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(envelope);
+
+    // Assert
+    verify(mqtt).publish(eq(ENVELOPE_BASE + "import_limit/watts"), any(), eq(0), eq(true));
+    verify(mqtt).publish(eq(ENVELOPE_BASE + "export_limit/watts"), any(), eq(0), eq(true));
+  }
+
+  @Test
+  void aTerminalControlCarryingNoModesStillClosesDerDispatch() throws Exception {
+    // Arrange: a close retransmission has neither a setpoint nor envelope limits, and its meaning
+    // lives entirely in the status — so it must still reach der_dispatch.
+    DerEvent closed = event(null, null, DerControlStatus.COMPLETED);
+
+    // Act
+    publisher().publish(closed);
+
+    // Assert
+    verify(mqtt).publish(eq(BASE + "event_active/none"), any(), eq(0), eq(true));
+  }
 }

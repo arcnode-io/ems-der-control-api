@@ -227,4 +227,16 @@ public class DerEvent {
   public void setSubmittedByLfdi(String submittedByLfdi) {
     this.submittedByLfdi = submittedByLfdi;
   }
+
+  /**
+   * True when this control carries only envelope modes — an import/export limit and no real-power
+   * setpoint. DERControlBase modes are orthogonal, so which ones are present is what distinguishes
+   * a standing operating envelope from a dispatch; CSIP-AUS adds no separate flag for it.
+   *
+   * <p>A terminal retransmission carries no modes at all and is deliberately not envelope-only: its
+   * meaning lives in the status, and it still has to close der_dispatch.
+   */
+  public boolean isEnvelopeOnly() {
+    return targetActivePowerW == null && (importLimitW != null || exportLimitW != null);
+  }
 }

@@ -63,19 +63,24 @@ public class DispatchPublisher {
     Instant now = clock.instant();
     DispatchMode mode = dispatchSettings.currentMode();
 
-    Double targetActivePowerW = event.getTargetActivePowerW();
-    if (targetActivePowerW != null) {
-      send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
-    }
-    send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
-    send(
-        DEVICE_ID,
-        "der_event_state",
-        "none",
-        new EnumSample(ts, event.derEventState(mode, now).name()));
-    Boolean energize = event.getEnergize();
-    if (energize != null) {
-      send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));
+    // Reason: the operating envelope is continuous, so reporting its arrival on der_dispatch would
+    // leave event_active permanently true and der_event_state permanently ACTIVE — the HMI would
+    // show a curtailment always in progress. An envelope constrains; it commands nothing.
+    if (!event.isEnvelopeOnly()) {
+      Double targetActivePowerW = event.getTargetActivePowerW();
+      if (targetActivePowerW != null) {
+        send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
+      }
+      send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
+      send(
+          DEVICE_ID,
+          "der_event_state",
+          "none",
+          new EnumSample(ts, event.derEventState(mode, now).name()));
+      Boolean energize = event.getEnergize();
+      if (energize != null) {
+        send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));
+      }
     }
 
     Double importLimitW = event.getImportLimitW();
