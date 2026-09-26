@@ -23,3 +23,6 @@ secrets.env
 # IEEE 2030.5 schema — IEEE-copyrighted, must not be redistributed. Fetched from IEEE's own
 # free download at build time (see download-maven-plugin in pom.xml), never committed.
 src/main/resources/xsd/sep.xsd
+
+# Playwright MCP scratch output
+.playwright-mcp/
