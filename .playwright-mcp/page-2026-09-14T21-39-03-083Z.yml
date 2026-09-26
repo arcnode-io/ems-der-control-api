@@ -1,0 +1,583 @@
+- generic [ref=f4e6]:
+  - generic [ref=f4e8]:
+    - generic [ref=f4e9]: ARCNODE EMS — 9714904b-b1f8-4a5c-80bd-03aa9ff2c749 1.0.0
+    - paragraph [ref=f4e12]: AsyncAPI v3 contract generated from DTM 9714904b-b1f8-4a5c-80bd-03aa9ff2c749.
+  - generic [ref=f4e13]:
+    - heading "Servers" [level=2] [ref=f4e14]
+    - list [ref=f4e15]:
+      - listitem [ref=f4e16]:
+        - generic [ref=f4e19]:
+          - generic [ref=f4e20]:
+            - text: "secure-mqtt://{host}:{port}/"
+            - strong [ref=f4e21]: secure-mqtt 5
+            - strong [ref=f4e22]: production
+          - paragraph [ref=f4e25]: Per-deployment MQTT broker. Variables resolved from operator config.
+          - generic [ref=f4e28]:
+            - generic [ref=f4e31]:
+              - button "URL Variables" [ref=f4e33] [cursor=pointer]
+              - generic [ref=f4e37]: object
+              - button "Collapse all" [ref=f4e39] [cursor=pointer]
+            - generic [ref=f4e41]:
+              - generic [ref=f4e44]:
+                - generic [ref=f4e46]:
+                  - button "host" [ref=f4e48] [cursor=pointer]
+                  - generic [ref=f4e52]: string
+                  - generic [ref=f4e53]: required
+                  - button "Expand all" [ref=f4e56] [cursor=pointer]
+                - paragraph [ref=f4e59]: Broker host
+              - generic [ref=f4e62]:
+                - generic [ref=f4e64]:
+                  - button "port" [ref=f4e66] [cursor=pointer]
+                  - generic [ref=f4e70]: string
+                  - generic [ref=f4e71]: required
+                  - button "Expand all" [ref=f4e74] [cursor=pointer]
+                - paragraph [ref=f4e77]: Broker port (TLS)
+          - generic [ref=f4e83]:
+            - button [ref=f4e85] [cursor=pointer]:
+              - generic [ref=f4e87]:
+                - text: Server specific information
+                - strong [ref=f4e88]: mqtt
+            - generic [ref=f4e91]: object
+            - button "Expand all" [ref=f4e93] [cursor=pointer]
+  - generic [ref=f4e94]:
+    - heading "Operations" [level=2] [ref=f4e95]
+    - list [ref=f4e96]:
+      - listitem [ref=f4e97]:
+        - generic [ref=f4e98]:
+          - generic [ref=f4e99]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f4e101]'
+            - generic [ref=f4e102]: Operation IDpublishMeasurementFloat
+            - generic [ref=f4e104]:
+              - paragraph [ref=f4e105]: "Available only on servers:"
+              - list [ref=f4e106]:
+                - listitem [ref=f4e107]:
+                  - link "production" [ref=f4e108] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e111]:
+              - generic [ref=f4e114]:
+                - button "Parameters" [ref=f4e116] [cursor=pointer]
+                - generic [ref=f4e120]: object
+                - button "Collapse all" [ref=f4e122] [cursor=pointer]
+              - generic [ref=f4e124]:
+                - generic [ref=f4e127]:
+                  - generic [ref=f4e129]:
+                    - generic [ref=f4e130]: site_id
+                    - generic [ref=f4e131]: string
+                    - generic [ref=f4e132]: required
+                  - paragraph [ref=f4e136]: Site slug (snake_case)
+                - generic [ref=f4e139]:
+                  - generic [ref=f4e141]:
+                    - generic [ref=f4e142]: device_id
+                    - generic [ref=f4e143]: string
+                    - generic [ref=f4e144]: required
+                  - paragraph [ref=f4e148]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e151]:
+                  - generic [ref=f4e153]:
+                    - generic [ref=f4e154]: measurement
+                    - generic [ref=f4e155]: string
+                    - generic [ref=f4e156]: required
+                  - paragraph [ref=f4e160]: Float-typed measurement
+                - generic [ref=f4e165]:
+                  - button "unit" [ref=f4e167] [cursor=pointer]
+                  - generic [ref=f4e171]: string
+                  - generic [ref=f4e172]: required
+                  - button "Expand all" [ref=f4e175] [cursor=pointer]
+            - generic [ref=f4e181]:
+              - button [ref=f4e183] [cursor=pointer]:
+                - generic [ref=f4e185]:
+                  - text: Operation specific information
+                  - strong [ref=f4e186]: mqtt
+              - generic [ref=f4e189]: object
+              - button "Expand all" [ref=f4e191] [cursor=pointer]
+          - generic [ref=f4e193]:
+            - paragraph [ref=f4e194]: "Accepts the following message:"
+            - generic [ref=f4e196]:
+              - generic [ref=f4e198]:
+                - generic [ref=f4e199]: Message IDsample
+                - generic [ref=f4e206]:
+                  - button "Payload" [ref=f4e208] [cursor=pointer]
+                  - generic [ref=f4e212]: object
+                  - button "Expand all" [ref=f4e214] [cursor=pointer]
+              - generic [ref=f4e216]:
+                - heading "Examples" [level=4] [ref=f4e217]
+                - button "Payload" [ref=f4e220] [cursor=pointer]
+      - listitem [ref=f4e225]:
+        - generic [ref=f4e226]:
+          - generic [ref=f4e227]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f4e229]'
+            - generic [ref=f4e230]: Operation IDpublishMeasurementBool
+            - generic [ref=f4e232]:
+              - paragraph [ref=f4e233]: "Available only on servers:"
+              - list [ref=f4e234]:
+                - listitem [ref=f4e235]:
+                  - link "production" [ref=f4e236] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e239]:
+              - generic [ref=f4e242]:
+                - button "Parameters" [ref=f4e244] [cursor=pointer]
+                - generic [ref=f4e248]: object
+                - button "Collapse all" [ref=f4e250] [cursor=pointer]
+              - generic [ref=f4e252]:
+                - generic [ref=f4e255]:
+                  - generic [ref=f4e257]:
+                    - generic [ref=f4e258]: site_id
+                    - generic [ref=f4e259]: string
+                    - generic [ref=f4e260]: required
+                  - paragraph [ref=f4e264]: Site slug (snake_case)
+                - generic [ref=f4e267]:
+                  - generic [ref=f4e269]:
+                    - generic [ref=f4e270]: device_id
+                    - generic [ref=f4e271]: string
+                    - generic [ref=f4e272]: required
+                  - paragraph [ref=f4e276]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e279]:
+                  - generic [ref=f4e281]:
+                    - generic [ref=f4e282]: measurement
+                    - generic [ref=f4e283]: string
+                    - generic [ref=f4e284]: required
+                  - paragraph [ref=f4e288]: Boolean-typed measurement
+                - generic [ref=f4e293]:
+                  - button "unit" [ref=f4e295] [cursor=pointer]
+                  - generic [ref=f4e299]: string
+                  - generic [ref=f4e300]: required
+                  - button "Expand all" [ref=f4e303] [cursor=pointer]
+            - generic [ref=f4e309]:
+              - button [ref=f4e311] [cursor=pointer]:
+                - generic [ref=f4e313]:
+                  - text: Operation specific information
+                  - strong [ref=f4e314]: mqtt
+              - generic [ref=f4e317]: object
+              - button "Expand all" [ref=f4e319] [cursor=pointer]
+          - generic [ref=f4e321]:
+            - paragraph [ref=f4e322]: "Accepts the following message:"
+            - generic [ref=f4e324]:
+              - generic [ref=f4e326]:
+                - generic [ref=f4e327]: Message IDsample
+                - generic [ref=f4e334]:
+                  - button "Payload" [ref=f4e336] [cursor=pointer]
+                  - generic [ref=f4e340]: object
+                  - button "Expand all" [ref=f4e342] [cursor=pointer]
+              - generic [ref=f4e344]:
+                - heading "Examples" [level=4] [ref=f4e345]
+                - button "Payload" [ref=f4e348] [cursor=pointer]
+      - listitem [ref=f4e353]:
+        - generic [ref=f4e354]:
+          - generic [ref=f4e355]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f4e357]'
+            - generic [ref=f4e358]: Operation IDpublishMeasurementEnum
+            - generic [ref=f4e360]:
+              - paragraph [ref=f4e361]: "Available only on servers:"
+              - list [ref=f4e362]:
+                - listitem [ref=f4e363]:
+                  - link "production" [ref=f4e364] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e367]:
+              - generic [ref=f4e370]:
+                - button "Parameters" [ref=f4e372] [cursor=pointer]
+                - generic [ref=f4e376]: object
+                - button "Collapse all" [ref=f4e378] [cursor=pointer]
+              - generic [ref=f4e380]:
+                - generic [ref=f4e383]:
+                  - generic [ref=f4e385]:
+                    - generic [ref=f4e386]: site_id
+                    - generic [ref=f4e387]: string
+                    - generic [ref=f4e388]: required
+                  - paragraph [ref=f4e392]: Site slug (snake_case)
+                - generic [ref=f4e395]:
+                  - generic [ref=f4e397]:
+                    - generic [ref=f4e398]: device_id
+                    - generic [ref=f4e399]: string
+                    - generic [ref=f4e400]: required
+                  - paragraph [ref=f4e404]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e407]:
+                  - generic [ref=f4e409]:
+                    - generic [ref=f4e410]: measurement
+                    - generic [ref=f4e411]: string
+                    - generic [ref=f4e412]: required
+                  - paragraph [ref=f4e416]: Enum-typed measurement
+                - generic [ref=f4e421]:
+                  - button "unit" [ref=f4e423] [cursor=pointer]
+                  - generic [ref=f4e427]: string
+                  - generic [ref=f4e428]: required
+                  - button "Expand all" [ref=f4e431] [cursor=pointer]
+            - generic [ref=f4e437]:
+              - button [ref=f4e439] [cursor=pointer]:
+                - generic [ref=f4e441]:
+                  - text: Operation specific information
+                  - strong [ref=f4e442]: mqtt
+              - generic [ref=f4e445]: object
+              - button "Expand all" [ref=f4e447] [cursor=pointer]
+          - generic [ref=f4e449]:
+            - paragraph [ref=f4e450]: "Accepts the following message:"
+            - generic [ref=f4e452]:
+              - generic [ref=f4e454]:
+                - generic [ref=f4e455]: Message IDsample
+                - generic [ref=f4e462]:
+                  - button "Payload" [ref=f4e464] [cursor=pointer]
+                  - generic [ref=f4e468]: object
+                  - button "Expand all" [ref=f4e470] [cursor=pointer]
+              - generic [ref=f4e472]:
+                - heading "Examples" [level=4] [ref=f4e473]
+                - button "Payload" [ref=f4e476] [cursor=pointer]
+      - listitem [ref=f4e481]:
+        - generic [ref=f4e482]:
+          - generic [ref=f4e483]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f4e485]'
+            - generic [ref=f4e486]: Operation IDreceiveCommandFloat
+            - generic [ref=f4e488]:
+              - paragraph [ref=f4e489]: "Available only on servers:"
+              - list [ref=f4e490]:
+                - listitem [ref=f4e491]:
+                  - link "production" [ref=f4e492] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e495]:
+              - generic [ref=f4e498]:
+                - button "Parameters" [ref=f4e500] [cursor=pointer]
+                - generic [ref=f4e504]: object
+                - button "Collapse all" [ref=f4e506] [cursor=pointer]
+              - generic [ref=f4e508]:
+                - generic [ref=f4e511]:
+                  - generic [ref=f4e513]:
+                    - generic [ref=f4e514]: site_id
+                    - generic [ref=f4e515]: string
+                    - generic [ref=f4e516]: required
+                  - paragraph [ref=f4e520]: Site slug (snake_case)
+                - generic [ref=f4e523]:
+                  - generic [ref=f4e525]:
+                    - generic [ref=f4e526]: device_id
+                    - generic [ref=f4e527]: string
+                    - generic [ref=f4e528]: required
+                  - paragraph [ref=f4e532]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e537]:
+                  - button "verb" [ref=f4e539] [cursor=pointer]
+                  - generic [ref=f4e543]: string
+                  - generic [ref=f4e544]: required
+                  - button "Expand all" [ref=f4e547] [cursor=pointer]
+                - generic [ref=f4e550]:
+                  - generic [ref=f4e552]:
+                    - generic [ref=f4e553]: target
+                    - generic [ref=f4e554]: string
+                    - generic [ref=f4e555]: required
+                  - paragraph [ref=f4e559]: Float setpoint target
+                - generic [ref=f4e564]:
+                  - button "unit" [ref=f4e566] [cursor=pointer]
+                  - generic [ref=f4e570]: string
+                  - generic [ref=f4e571]: required
+                  - button "Expand all" [ref=f4e574] [cursor=pointer]
+            - generic [ref=f4e580]:
+              - button [ref=f4e582] [cursor=pointer]:
+                - generic [ref=f4e584]:
+                  - text: Operation specific information
+                  - strong [ref=f4e585]: mqtt
+              - generic [ref=f4e588]: object
+              - button "Expand all" [ref=f4e590] [cursor=pointer]
+          - generic [ref=f4e592]:
+            - paragraph [ref=f4e593]: "Accepts the following message:"
+            - generic [ref=f4e595]:
+              - generic [ref=f4e597]:
+                - generic [ref=f4e598]: Message IDsample
+                - generic [ref=f4e605]:
+                  - button "Payload" [ref=f4e607] [cursor=pointer]
+                  - generic [ref=f4e611]: object
+                  - button "Expand all" [ref=f4e613] [cursor=pointer]
+              - generic [ref=f4e615]:
+                - heading "Examples" [level=4] [ref=f4e616]
+                - button "Payload" [ref=f4e619] [cursor=pointer]
+      - listitem [ref=f4e624]:
+        - generic [ref=f4e625]:
+          - generic [ref=f4e626]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f4e628]'
+            - generic [ref=f4e629]: Operation IDreceiveCommandBool
+            - generic [ref=f4e631]:
+              - paragraph [ref=f4e632]: "Available only on servers:"
+              - list [ref=f4e633]:
+                - listitem [ref=f4e634]:
+                  - link "production" [ref=f4e635] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e638]:
+              - generic [ref=f4e641]:
+                - button "Parameters" [ref=f4e643] [cursor=pointer]
+                - generic [ref=f4e647]: object
+                - button "Collapse all" [ref=f4e649] [cursor=pointer]
+              - generic [ref=f4e651]:
+                - generic [ref=f4e654]:
+                  - generic [ref=f4e656]:
+                    - generic [ref=f4e657]: site_id
+                    - generic [ref=f4e658]: string
+                    - generic [ref=f4e659]: required
+                  - paragraph [ref=f4e663]: Site slug (snake_case)
+                - generic [ref=f4e666]:
+                  - generic [ref=f4e668]:
+                    - generic [ref=f4e669]: device_id
+                    - generic [ref=f4e670]: string
+                    - generic [ref=f4e671]: required
+                  - paragraph [ref=f4e675]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e680]:
+                  - button "verb" [ref=f4e682] [cursor=pointer]
+                  - generic [ref=f4e686]: string
+                  - generic [ref=f4e687]: required
+                  - button "Expand all" [ref=f4e690] [cursor=pointer]
+                - generic [ref=f4e693]:
+                  - generic [ref=f4e695]:
+                    - generic [ref=f4e696]: target
+                    - generic [ref=f4e697]: string
+                    - generic [ref=f4e698]: required
+                  - paragraph [ref=f4e702]: Boolean state target
+                - generic [ref=f4e707]:
+                  - button "unit" [ref=f4e709] [cursor=pointer]
+                  - generic [ref=f4e713]: string
+                  - generic [ref=f4e714]: required
+                  - button "Expand all" [ref=f4e717] [cursor=pointer]
+            - generic [ref=f4e723]:
+              - button [ref=f4e725] [cursor=pointer]:
+                - generic [ref=f4e727]:
+                  - text: Operation specific information
+                  - strong [ref=f4e728]: mqtt
+              - generic [ref=f4e731]: object
+              - button "Expand all" [ref=f4e733] [cursor=pointer]
+          - generic [ref=f4e735]:
+            - paragraph [ref=f4e736]: "Accepts the following message:"
+            - generic [ref=f4e738]:
+              - generic [ref=f4e740]:
+                - generic [ref=f4e741]: Message IDsample
+                - generic [ref=f4e748]:
+                  - button "Payload" [ref=f4e750] [cursor=pointer]
+                  - generic [ref=f4e754]: object
+                  - button "Expand all" [ref=f4e756] [cursor=pointer]
+              - generic [ref=f4e758]:
+                - heading "Examples" [level=4] [ref=f4e759]
+                - button "Payload" [ref=f4e762] [cursor=pointer]
+      - listitem [ref=f4e767]:
+        - generic [ref=f4e768]:
+          - generic [ref=f4e769]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f4e771]'
+            - generic [ref=f4e772]: Operation IDreceiveCommandEnum
+            - generic [ref=f4e774]:
+              - paragraph [ref=f4e775]: "Available only on servers:"
+              - list [ref=f4e776]:
+                - listitem [ref=f4e777]:
+                  - link "production" [ref=f4e778] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e781]:
+              - generic [ref=f4e784]:
+                - button "Parameters" [ref=f4e786] [cursor=pointer]
+                - generic [ref=f4e790]: object
+                - button "Collapse all" [ref=f4e792] [cursor=pointer]
+              - generic [ref=f4e794]:
+                - generic [ref=f4e797]:
+                  - generic [ref=f4e799]:
+                    - generic [ref=f4e800]: site_id
+                    - generic [ref=f4e801]: string
+                    - generic [ref=f4e802]: required
+                  - paragraph [ref=f4e806]: Site slug (snake_case)
+                - generic [ref=f4e809]:
+                  - generic [ref=f4e811]:
+                    - generic [ref=f4e812]: device_id
+                    - generic [ref=f4e813]: string
+                    - generic [ref=f4e814]: required
+                  - paragraph [ref=f4e818]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e823]:
+                  - button "verb" [ref=f4e825] [cursor=pointer]
+                  - generic [ref=f4e829]: string
+                  - generic [ref=f4e830]: required
+                  - button "Expand all" [ref=f4e833] [cursor=pointer]
+                - generic [ref=f4e836]:
+                  - generic [ref=f4e838]:
+                    - generic [ref=f4e839]: target
+                    - generic [ref=f4e840]: string
+                    - generic [ref=f4e841]: required
+                  - paragraph [ref=f4e845]: Enum mode target
+                - generic [ref=f4e850]:
+                  - button "unit" [ref=f4e852] [cursor=pointer]
+                  - generic [ref=f4e856]: string
+                  - generic [ref=f4e857]: required
+                  - button "Expand all" [ref=f4e860] [cursor=pointer]
+            - generic [ref=f4e866]:
+              - button [ref=f4e868] [cursor=pointer]:
+                - generic [ref=f4e870]:
+                  - text: Operation specific information
+                  - strong [ref=f4e871]: mqtt
+              - generic [ref=f4e874]: object
+              - button "Expand all" [ref=f4e876] [cursor=pointer]
+          - generic [ref=f4e878]:
+            - paragraph [ref=f4e879]: "Accepts the following message:"
+            - generic [ref=f4e881]:
+              - generic [ref=f4e883]:
+                - generic [ref=f4e884]: Message IDsample
+                - generic [ref=f4e891]:
+                  - button "Payload" [ref=f4e893] [cursor=pointer]
+                  - generic [ref=f4e897]: object
+                  - button "Expand all" [ref=f4e899] [cursor=pointer]
+              - generic [ref=f4e901]:
+                - heading "Examples" [level=4] [ref=f4e902]
+                - button "Payload" [ref=f4e905] [cursor=pointer]
+      - listitem [ref=f4e910]:
+        - generic [ref=f4e911]:
+          - generic [ref=f4e912]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f4e914]'
+            - generic [ref=f4e915]: Operation IDreceiveCommandTrigger
+            - generic [ref=f4e917]:
+              - paragraph [ref=f4e918]: "Available only on servers:"
+              - list [ref=f4e919]:
+                - listitem [ref=f4e920]:
+                  - link "production" [ref=f4e921] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e924]:
+              - generic [ref=f4e927]:
+                - button "Parameters" [ref=f4e929] [cursor=pointer]
+                - generic [ref=f4e933]: object
+                - button "Collapse all" [ref=f4e935] [cursor=pointer]
+              - generic [ref=f4e937]:
+                - generic [ref=f4e940]:
+                  - generic [ref=f4e942]:
+                    - generic [ref=f4e943]: site_id
+                    - generic [ref=f4e944]: string
+                    - generic [ref=f4e945]: required
+                  - paragraph [ref=f4e949]: Site slug (snake_case)
+                - generic [ref=f4e952]:
+                  - generic [ref=f4e954]:
+                    - generic [ref=f4e955]: device_id
+                    - generic [ref=f4e956]: string
+                    - generic [ref=f4e957]: required
+                  - paragraph [ref=f4e961]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f4e966]:
+                  - button "verb" [ref=f4e968] [cursor=pointer]
+                  - generic [ref=f4e972]: string
+                  - generic [ref=f4e973]: required
+                  - button "Expand all" [ref=f4e976] [cursor=pointer]
+                - generic [ref=f4e979]:
+                  - generic [ref=f4e981]:
+                    - generic [ref=f4e982]: target
+                    - generic [ref=f4e983]: string
+                    - generic [ref=f4e984]: required
+                  - paragraph [ref=f4e988]: Trigger target
+                - generic [ref=f4e993]:
+                  - button "unit" [ref=f4e995] [cursor=pointer]
+                  - generic [ref=f4e999]: string
+                  - generic [ref=f4e1000]: required
+                  - button "Expand all" [ref=f4e1003] [cursor=pointer]
+            - generic [ref=f4e1009]:
+              - button [ref=f4e1011] [cursor=pointer]:
+                - generic [ref=f4e1013]:
+                  - text: Operation specific information
+                  - strong [ref=f4e1014]: mqtt
+              - generic [ref=f4e1017]: object
+              - button "Expand all" [ref=f4e1019] [cursor=pointer]
+          - generic [ref=f4e1021]:
+            - paragraph [ref=f4e1022]: "Accepts the following message:"
+            - generic [ref=f4e1024]:
+              - generic [ref=f4e1026]:
+                - generic [ref=f4e1027]: Message IDsample
+                - generic [ref=f4e1034]:
+                  - button "Payload" [ref=f4e1036] [cursor=pointer]
+                  - generic [ref=f4e1040]: object
+                  - button "Expand all" [ref=f4e1042] [cursor=pointer]
+              - generic [ref=f4e1044]:
+                - heading "Examples" [level=4] [ref=f4e1045]
+                - button "Payload" [ref=f4e1048] [cursor=pointer]
+      - listitem [ref=f4e1053]:
+        - generic [ref=f4e1054]:
+          - generic [ref=f4e1055]:
+            - heading "SEND system/topology_changed" [level=3] [ref=f4e1057]
+            - generic [ref=f4e1058]: Operation IDpublishTopologyChanged
+            - generic [ref=f4e1060]:
+              - paragraph [ref=f4e1061]: "Available only on servers:"
+              - list [ref=f4e1062]:
+                - listitem [ref=f4e1063]:
+                  - link "production" [ref=f4e1064] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f4e1070]:
+              - button [ref=f4e1072] [cursor=pointer]:
+                - generic [ref=f4e1074]:
+                  - text: Operation specific information
+                  - strong [ref=f4e1075]: mqtt
+              - generic [ref=f4e1078]: object
+              - button "Expand all" [ref=f4e1080] [cursor=pointer]
+          - generic [ref=f4e1082]:
+            - paragraph [ref=f4e1083]: "Accepts the following message:"
+            - generic [ref=f4e1085]:
+              - generic [ref=f4e1087]:
+                - generic [ref=f4e1088]: Message IDevent
+                - generic [ref=f4e1095]:
+                  - button "Payload" [ref=f4e1097] [cursor=pointer]
+                  - generic [ref=f4e1101]: object
+                  - button "Expand all" [ref=f4e1103] [cursor=pointer]
+              - generic [ref=f4e1105]:
+                - heading "Examples" [level=4] [ref=f4e1106]
+                - button "Payload" [ref=f4e1109] [cursor=pointer]
+  - generic [ref=f4e1114]:
+    - heading "Messages" [level=2] [ref=f4e1115]
+    - list [ref=f4e1116]:
+      - listitem [ref=f4e1117]:
+        - generic [ref=f4e1120]:
+          - strong [ref=f4e1122]: "#1"
+          - generic [ref=f4e1123]: Message IDFloatSampleMsg
+          - generic [ref=f4e1130]:
+            - button "Payload" [ref=f4e1132] [cursor=pointer]
+            - generic [ref=f4e1136]: object
+            - button "Expand all" [ref=f4e1138] [cursor=pointer]
+      - listitem [ref=f4e1139]:
+        - generic [ref=f4e1142]:
+          - strong [ref=f4e1144]: "#2"
+          - generic [ref=f4e1145]: Message IDBooleanSampleMsg
+          - generic [ref=f4e1152]:
+            - button "Payload" [ref=f4e1154] [cursor=pointer]
+            - generic [ref=f4e1158]: object
+            - button "Expand all" [ref=f4e1160] [cursor=pointer]
+      - listitem [ref=f4e1161]:
+        - generic [ref=f4e1164]:
+          - strong [ref=f4e1166]: "#3"
+          - generic [ref=f4e1167]: Message IDEnumSampleMsg
+          - generic [ref=f4e1174]:
+            - button "Payload" [ref=f4e1176] [cursor=pointer]
+            - generic [ref=f4e1180]: object
+            - button "Expand all" [ref=f4e1182] [cursor=pointer]
+      - listitem [ref=f4e1183]:
+        - generic [ref=f4e1186]:
+          - strong [ref=f4e1188]: "#4"
+          - generic [ref=f4e1189]: Message IDTriggerSampleMsg
+          - generic [ref=f4e1196]:
+            - button "Payload" [ref=f4e1198] [cursor=pointer]
+            - generic [ref=f4e1202]: object
+            - button "Expand all" [ref=f4e1204] [cursor=pointer]
+      - listitem [ref=f4e1205]:
+        - generic [ref=f4e1208]:
+          - strong [ref=f4e1210]: "#5"
+          - generic [ref=f4e1211]: Message IDTopologyChangedMsg
+          - generic [ref=f4e1218]:
+            - button "Payload" [ref=f4e1220] [cursor=pointer]
+            - generic [ref=f4e1224]: object
+            - button "Expand all" [ref=f4e1226] [cursor=pointer]
+  - generic [ref=f4e1227]:
+    - heading "Schemas" [level=2] [ref=f4e1228]
+    - list [ref=f4e1229]:
+      - listitem [ref=f4e1230]:
+        - generic [ref=f4e1238]:
+          - button "FloatSample" [ref=f4e1240] [cursor=pointer]
+          - generic [ref=f4e1244]: object
+          - button "Expand all" [ref=f4e1246] [cursor=pointer]
+      - listitem [ref=f4e1247]:
+        - generic [ref=f4e1255]:
+          - button "BooleanSample" [ref=f4e1257] [cursor=pointer]
+          - generic [ref=f4e1261]: object
+          - button "Expand all" [ref=f4e1263] [cursor=pointer]
+      - listitem [ref=f4e1264]:
+        - generic [ref=f4e1272]:
+          - button "EnumSample" [ref=f4e1274] [cursor=pointer]
+          - generic [ref=f4e1278]: object
+          - button "Expand all" [ref=f4e1280] [cursor=pointer]
+      - listitem [ref=f4e1281]:
+        - generic [ref=f4e1289]:
+          - button "TriggerSample" [ref=f4e1291] [cursor=pointer]
+          - generic [ref=f4e1295]: object
+          - button "Expand all" [ref=f4e1297] [cursor=pointer]
+      - listitem [ref=f4e1298]:
+        - generic [ref=f4e1306]:
+          - button "TopologyChanged" [ref=f4e1308] [cursor=pointer]
+          - generic [ref=f4e1312]: object
+          - button "Expand all" [ref=f4e1314] [cursor=pointer]
+      - listitem [ref=f4e1315]:
+        - generic [ref=f4e1323]:
+          - button "ProtocolSource" [ref=f4e1325] [cursor=pointer]
+          - generic [ref=f4e1329]: object
+          - button "Expand all" [ref=f4e1331] [cursor=pointer]

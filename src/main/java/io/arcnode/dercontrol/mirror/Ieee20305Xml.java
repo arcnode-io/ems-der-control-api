@@ -1,9 +1,14 @@
 package io.arcnode.dercontrol.mirror;
 
+import io.arcnode.dercontrol.mirror.ieee20305.DERControl;
 import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
+import io.arcnode.dercontrol.mirror.ieee20305.Notification;
+import io.arcnode.dercontrol.mirror.ieee20305.NotificationElement;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import javax.xml.XMLConstants;
@@ -40,6 +45,23 @@ public final class Ieee20305Xml {
   }
 
   /**
+   * Parses an inbound {@code Notification}.
+   *
+   * @throws IllegalArgumentException if {@code xml} is not a parseable IEEE 2030.5 Notification
+   */
+  public static Notification unmarshalNotification(String xml) {
+    try {
+      // Reason: DERControl arrives in the Resource slot under an xsi:type, so its runtime class has
+      // to be in the context for the unmarshaller to resolve that type.
+      JAXBContext context = JAXBContext.newInstance(NotificationElement.class, DERControl.class);
+      Unmarshaller unmarshaller = context.createUnmarshaller();
+      return (NotificationElement) unmarshaller.unmarshal(new StreamSource(new StringReader(xml)));
+    } catch (JAXBException | ClassCastException e) {
+      throw new IllegalArgumentException("failed to parse Notification", e);
+    }
+  }
+
+  /**
    * @throws org.xml.sax.SAXException if {@code xml} does not validate against the real IEEE 2030.5
    *     schema
    */
@@ -47,7 +69,7 @@ public final class Ieee20305Xml {
     Schema schema = loadSchema();
     Validator validator = schema.newValidator();
     try {
-      validator.validate(new StreamSource(new java.io.StringReader(xml)));
+      validator.validate(new StreamSource(new StringReader(xml)));
     } catch (java.io.IOException e) {
       // Reason: a StringReader-backed Source cannot actually fail with an I/O error; the checked
       // signature is Validator's, not a real failure mode here.

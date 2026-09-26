@@ -1,0 +1,397 @@
+- generic [ref=f2e6]:
+  - generic [ref=f2e8]:
+    - generic [ref=f2e9]: ARCNODE EMS — 343c6e13-2dc3-4fa4-888d-c6f2dc68c3ff 1.0.0
+    - paragraph [ref=f2e12]: AsyncAPI v3 contract generated from DTM 343c6e13-2dc3-4fa4-888d-c6f2dc68c3ff.
+  - generic [ref=f2e13]:
+    - heading "Servers" [level=2] [ref=f2e14]
+    - list [ref=f2e15]:
+      - listitem [ref=f2e16]:
+        - generic [ref=f2e19]:
+          - generic [ref=f2e20]:
+            - text: "secure-mqtt://{host}:{port}/"
+            - strong [ref=f2e21]: secure-mqtt 5
+            - strong [ref=f2e22]: production
+          - paragraph [ref=f2e25]: Per-deployment MQTT broker. Variables resolved from operator config.
+          - generic [ref=f2e31]:
+            - button "URL Variables" [ref=f2e33] [cursor=pointer]
+            - generic [ref=f2e37]: object
+            - button "Expand all" [ref=f2e1332] [cursor=pointer]
+          - generic [ref=f2e83]:
+            - button [ref=f2e85] [cursor=pointer]:
+              - generic [ref=f2e87]:
+                - text: Server specific information
+                - strong [ref=f2e88]: mqtt
+            - generic [ref=f2e91]: object
+            - button "Expand all" [ref=f2e93] [cursor=pointer]
+  - generic [ref=f2e94]:
+    - heading "Operations" [level=2] [ref=f2e95]
+    - list [ref=f2e96]:
+      - listitem [ref=f2e97]:
+        - generic [ref=f2e98]:
+          - generic [ref=f2e99]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f2e101]'
+            - generic [ref=f2e102]: Operation IDpublishMeasurementFloat
+            - generic [ref=f2e104]:
+              - paragraph [ref=f2e105]: "Available only on servers:"
+              - list [ref=f2e106]:
+                - listitem [ref=f2e107]:
+                  - link "production" [ref=f2e108] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e111]:
+              - generic [ref=f2e114]:
+                - button "Parameters" [active] [ref=f2e116] [cursor=pointer]
+                - generic [ref=f2e120]: object
+                - button "Collapse all" [ref=f2e1340] [cursor=pointer]
+              - generic [ref=f2e1341]:
+                - generic [ref=f2e1344]:
+                  - generic [ref=f2e1346]:
+                    - generic [ref=f2e1347]: site_id
+                    - generic [ref=f2e1348]: string
+                    - generic [ref=f2e1349]: required
+                  - paragraph [ref=f2e1353]: Site slug (snake_case)
+                - generic [ref=f2e1356]:
+                  - generic [ref=f2e1358]:
+                    - generic [ref=f2e1359]: device_id
+                    - generic [ref=f2e1360]: string
+                    - generic [ref=f2e1361]: required
+                  - paragraph [ref=f2e1365]: Device slug (leaf id; depth lives in DTM)
+                - generic [ref=f2e1368]:
+                  - generic [ref=f2e1370]:
+                    - generic [ref=f2e1371]: measurement
+                    - generic [ref=f2e1372]: string
+                    - generic [ref=f2e1373]: required
+                  - paragraph [ref=f2e1377]: Float-typed measurement
+                - generic [ref=f2e1382]:
+                  - button "unit" [ref=f2e1384] [cursor=pointer]
+                  - generic [ref=f2e1388]: string
+                  - generic [ref=f2e1389]: required
+                  - button "Expand all" [ref=f2e1392] [cursor=pointer]
+            - generic [ref=f2e181]:
+              - button [ref=f2e183] [cursor=pointer]:
+                - generic [ref=f2e185]:
+                  - text: Operation specific information
+                  - strong [ref=f2e186]: mqtt
+              - generic [ref=f2e189]: object
+              - button "Expand all" [ref=f2e191] [cursor=pointer]
+          - generic [ref=f2e193]:
+            - paragraph [ref=f2e194]: "Accepts the following message:"
+            - generic [ref=f2e196]:
+              - generic [ref=f2e198]:
+                - generic [ref=f2e199]: Message IDsample
+                - generic [ref=f2e206]:
+                  - button "Payload" [ref=f2e208] [cursor=pointer]
+                  - generic [ref=f2e212]: object
+                  - button "Expand all" [ref=f2e214] [cursor=pointer]
+              - generic [ref=f2e216]:
+                - heading "Examples" [level=4] [ref=f2e217]
+                - button "Payload" [ref=f2e220] [cursor=pointer]
+      - listitem [ref=f2e225]:
+        - generic [ref=f2e226]:
+          - generic [ref=f2e227]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f2e229]'
+            - generic [ref=f2e230]: Operation IDpublishMeasurementBool
+            - generic [ref=f2e232]:
+              - paragraph [ref=f2e233]: "Available only on servers:"
+              - list [ref=f2e234]:
+                - listitem [ref=f2e235]:
+                  - link "production" [ref=f2e236] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e242]:
+              - button "Parameters" [ref=f2e244] [cursor=pointer]
+              - generic [ref=f2e248]: object
+              - button "Expand all" [ref=f2e1334] [cursor=pointer]
+            - generic [ref=f2e309]:
+              - button [ref=f2e311] [cursor=pointer]:
+                - generic [ref=f2e313]:
+                  - text: Operation specific information
+                  - strong [ref=f2e314]: mqtt
+              - generic [ref=f2e317]: object
+              - button "Expand all" [ref=f2e319] [cursor=pointer]
+          - generic [ref=f2e321]:
+            - paragraph [ref=f2e322]: "Accepts the following message:"
+            - generic [ref=f2e324]:
+              - generic [ref=f2e326]:
+                - generic [ref=f2e327]: Message IDsample
+                - generic [ref=f2e334]:
+                  - button "Payload" [ref=f2e336] [cursor=pointer]
+                  - generic [ref=f2e340]: object
+                  - button "Expand all" [ref=f2e342] [cursor=pointer]
+              - generic [ref=f2e344]:
+                - heading "Examples" [level=4] [ref=f2e345]
+                - button "Payload" [ref=f2e348] [cursor=pointer]
+      - listitem [ref=f2e353]:
+        - generic [ref=f2e354]:
+          - generic [ref=f2e355]:
+            - 'heading "SEND sites/{site_id}/devices/{device_id}/measurements/{measurement}/{unit}" [level=3] [ref=f2e357]'
+            - generic [ref=f2e358]: Operation IDpublishMeasurementEnum
+            - generic [ref=f2e360]:
+              - paragraph [ref=f2e361]: "Available only on servers:"
+              - list [ref=f2e362]:
+                - listitem [ref=f2e363]:
+                  - link "production" [ref=f2e364] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e370]:
+              - button "Parameters" [ref=f2e372] [cursor=pointer]
+              - generic [ref=f2e376]: object
+              - button "Expand all" [ref=f2e1335] [cursor=pointer]
+            - generic [ref=f2e437]:
+              - button [ref=f2e439] [cursor=pointer]:
+                - generic [ref=f2e441]:
+                  - text: Operation specific information
+                  - strong [ref=f2e442]: mqtt
+              - generic [ref=f2e445]: object
+              - button "Expand all" [ref=f2e447] [cursor=pointer]
+          - generic [ref=f2e449]:
+            - paragraph [ref=f2e450]: "Accepts the following message:"
+            - generic [ref=f2e452]:
+              - generic [ref=f2e454]:
+                - generic [ref=f2e455]: Message IDsample
+                - generic [ref=f2e462]:
+                  - button "Payload" [ref=f2e464] [cursor=pointer]
+                  - generic [ref=f2e468]: object
+                  - button "Expand all" [ref=f2e470] [cursor=pointer]
+              - generic [ref=f2e472]:
+                - heading "Examples" [level=4] [ref=f2e473]
+                - button "Payload" [ref=f2e476] [cursor=pointer]
+      - listitem [ref=f2e481]:
+        - generic [ref=f2e482]:
+          - generic [ref=f2e483]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f2e485]'
+            - generic [ref=f2e486]: Operation IDreceiveCommandFloat
+            - generic [ref=f2e488]:
+              - paragraph [ref=f2e489]: "Available only on servers:"
+              - list [ref=f2e490]:
+                - listitem [ref=f2e491]:
+                  - link "production" [ref=f2e492] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e498]:
+              - button "Parameters" [ref=f2e500] [cursor=pointer]
+              - generic [ref=f2e504]: object
+              - button "Expand all" [ref=f2e1336] [cursor=pointer]
+            - generic [ref=f2e580]:
+              - button [ref=f2e582] [cursor=pointer]:
+                - generic [ref=f2e584]:
+                  - text: Operation specific information
+                  - strong [ref=f2e585]: mqtt
+              - generic [ref=f2e588]: object
+              - button "Expand all" [ref=f2e590] [cursor=pointer]
+          - generic [ref=f2e592]:
+            - paragraph [ref=f2e593]: "Accepts the following message:"
+            - generic [ref=f2e595]:
+              - generic [ref=f2e597]:
+                - generic [ref=f2e598]: Message IDsample
+                - generic [ref=f2e605]:
+                  - button "Payload" [ref=f2e607] [cursor=pointer]
+                  - generic [ref=f2e611]: object
+                  - button "Expand all" [ref=f2e613] [cursor=pointer]
+              - generic [ref=f2e615]:
+                - heading "Examples" [level=4] [ref=f2e616]
+                - button "Payload" [ref=f2e619] [cursor=pointer]
+      - listitem [ref=f2e624]:
+        - generic [ref=f2e625]:
+          - generic [ref=f2e626]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f2e628]'
+            - generic [ref=f2e629]: Operation IDreceiveCommandBool
+            - generic [ref=f2e631]:
+              - paragraph [ref=f2e632]: "Available only on servers:"
+              - list [ref=f2e633]:
+                - listitem [ref=f2e634]:
+                  - link "production" [ref=f2e635] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e641]:
+              - button "Parameters" [ref=f2e643] [cursor=pointer]
+              - generic [ref=f2e647]: object
+              - button "Expand all" [ref=f2e1337] [cursor=pointer]
+            - generic [ref=f2e723]:
+              - button [ref=f2e725] [cursor=pointer]:
+                - generic [ref=f2e727]:
+                  - text: Operation specific information
+                  - strong [ref=f2e728]: mqtt
+              - generic [ref=f2e731]: object
+              - button "Expand all" [ref=f2e733] [cursor=pointer]
+          - generic [ref=f2e735]:
+            - paragraph [ref=f2e736]: "Accepts the following message:"
+            - generic [ref=f2e738]:
+              - generic [ref=f2e740]:
+                - generic [ref=f2e741]: Message IDsample
+                - generic [ref=f2e748]:
+                  - button "Payload" [ref=f2e750] [cursor=pointer]
+                  - generic [ref=f2e754]: object
+                  - button "Expand all" [ref=f2e756] [cursor=pointer]
+              - generic [ref=f2e758]:
+                - heading "Examples" [level=4] [ref=f2e759]
+                - button "Payload" [ref=f2e762] [cursor=pointer]
+      - listitem [ref=f2e767]:
+        - generic [ref=f2e768]:
+          - generic [ref=f2e769]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f2e771]'
+            - generic [ref=f2e772]: Operation IDreceiveCommandEnum
+            - generic [ref=f2e774]:
+              - paragraph [ref=f2e775]: "Available only on servers:"
+              - list [ref=f2e776]:
+                - listitem [ref=f2e777]:
+                  - link "production" [ref=f2e778] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e784]:
+              - button "Parameters" [ref=f2e786] [cursor=pointer]
+              - generic [ref=f2e790]: object
+              - button "Expand all" [ref=f2e1338] [cursor=pointer]
+            - generic [ref=f2e866]:
+              - button [ref=f2e868] [cursor=pointer]:
+                - generic [ref=f2e870]:
+                  - text: Operation specific information
+                  - strong [ref=f2e871]: mqtt
+              - generic [ref=f2e874]: object
+              - button "Expand all" [ref=f2e876] [cursor=pointer]
+          - generic [ref=f2e878]:
+            - paragraph [ref=f2e879]: "Accepts the following message:"
+            - generic [ref=f2e881]:
+              - generic [ref=f2e883]:
+                - generic [ref=f2e884]: Message IDsample
+                - generic [ref=f2e891]:
+                  - button "Payload" [ref=f2e893] [cursor=pointer]
+                  - generic [ref=f2e897]: object
+                  - button "Expand all" [ref=f2e899] [cursor=pointer]
+              - generic [ref=f2e901]:
+                - heading "Examples" [level=4] [ref=f2e902]
+                - button "Payload" [ref=f2e905] [cursor=pointer]
+      - listitem [ref=f2e910]:
+        - generic [ref=f2e911]:
+          - generic [ref=f2e912]:
+            - 'heading "RECEIVE sites/{site_id}/devices/{device_id}/commands/{verb}/{target}/{unit}" [level=3] [ref=f2e914]'
+            - generic [ref=f2e915]: Operation IDreceiveCommandTrigger
+            - generic [ref=f2e917]:
+              - paragraph [ref=f2e918]: "Available only on servers:"
+              - list [ref=f2e919]:
+                - listitem [ref=f2e920]:
+                  - link "production" [ref=f2e921] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e927]:
+              - button "Parameters" [ref=f2e929] [cursor=pointer]
+              - generic [ref=f2e933]: object
+              - button "Expand all" [ref=f2e1339] [cursor=pointer]
+            - generic [ref=f2e1009]:
+              - button [ref=f2e1011] [cursor=pointer]:
+                - generic [ref=f2e1013]:
+                  - text: Operation specific information
+                  - strong [ref=f2e1014]: mqtt
+              - generic [ref=f2e1017]: object
+              - button "Expand all" [ref=f2e1019] [cursor=pointer]
+          - generic [ref=f2e1021]:
+            - paragraph [ref=f2e1022]: "Accepts the following message:"
+            - generic [ref=f2e1024]:
+              - generic [ref=f2e1026]:
+                - generic [ref=f2e1027]: Message IDsample
+                - generic [ref=f2e1034]:
+                  - button "Payload" [ref=f2e1036] [cursor=pointer]
+                  - generic [ref=f2e1040]: object
+                  - button "Expand all" [ref=f2e1042] [cursor=pointer]
+              - generic [ref=f2e1044]:
+                - heading "Examples" [level=4] [ref=f2e1045]
+                - button "Payload" [ref=f2e1048] [cursor=pointer]
+      - listitem [ref=f2e1053]:
+        - generic [ref=f2e1054]:
+          - generic [ref=f2e1055]:
+            - heading "SEND system/topology_changed" [level=3] [ref=f2e1057]
+            - generic [ref=f2e1058]: Operation IDpublishTopologyChanged
+            - generic [ref=f2e1060]:
+              - paragraph [ref=f2e1061]: "Available only on servers:"
+              - list [ref=f2e1062]:
+                - listitem [ref=f2e1063]:
+                  - link "production" [ref=f2e1064] [cursor=pointer]:
+                    - /url: /asyncapi/docs#server-production
+            - generic [ref=f2e1070]:
+              - button [ref=f2e1072] [cursor=pointer]:
+                - generic [ref=f2e1074]:
+                  - text: Operation specific information
+                  - strong [ref=f2e1075]: mqtt
+              - generic [ref=f2e1078]: object
+              - button "Expand all" [ref=f2e1080] [cursor=pointer]
+          - generic [ref=f2e1082]:
+            - paragraph [ref=f2e1083]: "Accepts the following message:"
+            - generic [ref=f2e1085]:
+              - generic [ref=f2e1087]:
+                - generic [ref=f2e1088]: Message IDevent
+                - generic [ref=f2e1095]:
+                  - button "Payload" [ref=f2e1097] [cursor=pointer]
+                  - generic [ref=f2e1101]: object
+                  - button "Expand all" [ref=f2e1103] [cursor=pointer]
+              - generic [ref=f2e1105]:
+                - heading "Examples" [level=4] [ref=f2e1106]
+                - button "Payload" [ref=f2e1109] [cursor=pointer]
+  - generic [ref=f2e1114]:
+    - heading "Messages" [level=2] [ref=f2e1115]
+    - list [ref=f2e1116]:
+      - listitem [ref=f2e1117]:
+        - generic [ref=f2e1120]:
+          - strong [ref=f2e1122]: "#1"
+          - generic [ref=f2e1123]: Message IDFloatSampleMsg
+          - generic [ref=f2e1130]:
+            - button "Payload" [ref=f2e1132] [cursor=pointer]
+            - generic [ref=f2e1136]: object
+            - button "Expand all" [ref=f2e1138] [cursor=pointer]
+      - listitem [ref=f2e1139]:
+        - generic [ref=f2e1142]:
+          - strong [ref=f2e1144]: "#2"
+          - generic [ref=f2e1145]: Message IDBooleanSampleMsg
+          - generic [ref=f2e1152]:
+            - button "Payload" [ref=f2e1154] [cursor=pointer]
+            - generic [ref=f2e1158]: object
+            - button "Expand all" [ref=f2e1160] [cursor=pointer]
+      - listitem [ref=f2e1161]:
+        - generic [ref=f2e1164]:
+          - strong [ref=f2e1166]: "#3"
+          - generic [ref=f2e1167]: Message IDEnumSampleMsg
+          - generic [ref=f2e1174]:
+            - button "Payload" [ref=f2e1176] [cursor=pointer]
+            - generic [ref=f2e1180]: object
+            - button "Expand all" [ref=f2e1182] [cursor=pointer]
+      - listitem [ref=f2e1183]:
+        - generic [ref=f2e1186]:
+          - strong [ref=f2e1188]: "#4"
+          - generic [ref=f2e1189]: Message IDTriggerSampleMsg
+          - generic [ref=f2e1196]:
+            - button "Payload" [ref=f2e1198] [cursor=pointer]
+            - generic [ref=f2e1202]: object
+            - button "Expand all" [ref=f2e1204] [cursor=pointer]
+      - listitem [ref=f2e1205]:
+        - generic [ref=f2e1208]:
+          - strong [ref=f2e1210]: "#5"
+          - generic [ref=f2e1211]: Message IDTopologyChangedMsg
+          - generic [ref=f2e1218]:
+            - button "Payload" [ref=f2e1220] [cursor=pointer]
+            - generic [ref=f2e1224]: object
+            - button "Expand all" [ref=f2e1226] [cursor=pointer]
+  - generic [ref=f2e1227]:
+    - heading "Schemas" [level=2] [ref=f2e1228]
+    - list [ref=f2e1229]:
+      - listitem [ref=f2e1230]:
+        - generic [ref=f2e1238]:
+          - button "FloatSample" [ref=f2e1240] [cursor=pointer]
+          - generic [ref=f2e1244]: object
+          - button "Expand all" [ref=f2e1246] [cursor=pointer]
+      - listitem [ref=f2e1247]:
+        - generic [ref=f2e1255]:
+          - button "BooleanSample" [ref=f2e1257] [cursor=pointer]
+          - generic [ref=f2e1261]: object
+          - button "Expand all" [ref=f2e1263] [cursor=pointer]
+      - listitem [ref=f2e1264]:
+        - generic [ref=f2e1272]:
+          - button "EnumSample" [ref=f2e1274] [cursor=pointer]
+          - generic [ref=f2e1278]: object
+          - button "Expand all" [ref=f2e1280] [cursor=pointer]
+      - listitem [ref=f2e1281]:
+        - generic [ref=f2e1289]:
+          - button "TriggerSample" [ref=f2e1291] [cursor=pointer]
+          - generic [ref=f2e1295]: object
+          - button "Expand all" [ref=f2e1297] [cursor=pointer]
+      - listitem [ref=f2e1298]:
+        - generic [ref=f2e1306]:
+          - button "TopologyChanged" [ref=f2e1308] [cursor=pointer]
+          - generic [ref=f2e1312]: object
+          - button "Expand all" [ref=f2e1314] [cursor=pointer]
+      - listitem [ref=f2e1315]:
+        - generic [ref=f2e1323]:
+          - button "ProtocolSource" [ref=f2e1325] [cursor=pointer]
+          - generic [ref=f2e1329]: object
+          - button "Expand all" [ref=f2e1331] [cursor=pointer]
