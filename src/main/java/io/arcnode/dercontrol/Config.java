@@ -35,6 +35,10 @@ import org.yaml.snakeyaml.Yaml;
  * @param utilityMirrorUrl base URL of the utility's own {@code MirrorUsagePoint} intake — config
  *     (not a compile-time constant) both for WireMock testability and because a real deployment
  *     points this at a real utility, not always the same target
+ * @param publicBaseUrl this service's own externally-reachable base URL. It goes out in the
+ *     Subscription this service registers with the utility, as the notificationURI the utility
+ *     pushes DERControl Notifications to, so it has to be reachable from there rather than from
+ *     here.
  */
 @ConfigurationProperties(prefix = "app")
 @Validated
@@ -47,7 +51,8 @@ public record Config(
     @NotBlank String mqttBrokerUrl,
     @NotBlank String mqttUsername,
     @NotBlank String siteId,
-    @NotBlank String utilityMirrorUrl) {
+    @NotBlank String utilityMirrorUrl,
+    @NotBlank String publicBaseUrl) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {
@@ -76,7 +81,6 @@ public record Config(
   public static class Loader implements EnvironmentPostProcessor {
 
     private static final String CONFIG_FILE = "cfg.yml";
-    private static final String BETA = "beta";
     private static final String DEFAULT_BLOCK = "local";
     private static final String PROPERTY_SOURCE_NAME = "cfg.yml";
 
@@ -90,7 +94,10 @@ public record Config(
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication app) {
       String env =
           environment.getProperty("ENV", System.getenv().getOrDefault("ENV", DEFAULT_BLOCK));
-      Map<String, Object> block = readBlock(BETA.equals(env) ? BETA : DEFAULT_BLOCK);
+      // Reason: the block is whichever one $ENV names, so adding a cfg.yml block is enough to add a
+      // profile. readBlock throws on a name with no block, rather than quietly running something
+      // else — a silent fallback would surface as a behaviour bug instead of a misconfiguration.
+      Map<String, Object> block = readBlock(env);
 
       Map<String, Object> resolved = new LinkedHashMap<>();
       block.forEach(

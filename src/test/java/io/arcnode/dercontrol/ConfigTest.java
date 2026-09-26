@@ -1,6 +1,7 @@
 package io.arcnode.dercontrol;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -31,8 +32,8 @@ class ConfigTest {
   }
 
   @Test
-  void unknownEnvFallsBackToLocalBlock() {
-    // Arrange: the CI runner exports ENV=ci — must behave like the siblings (fall through to local)
+  void resolvesTheCiBlockTheRunnerAsksFor() {
+    // Arrange: the gitlab-runner host exports ENV=ci, so `ci` names a real block
     MockEnvironment env = new MockEnvironment().withProperty("ENV", "ci");
 
     // Act
@@ -41,6 +42,18 @@ class ConfigTest {
     // Assert
     assertThat(env.getProperty("app.postgresHost")).isEqualTo("localhost");
     assertThat(env.getProperty("app.e2e", Boolean.class)).isFalse();
+  }
+
+  @Test
+  void failsLoudlyWhenEnvNamesNoBlock() {
+    // Arrange: silently falling back to local would run the wrong configuration and present as a
+    // behaviour bug rather than a misconfiguration
+    MockEnvironment env = new MockEnvironment().withProperty("ENV", "nope");
+
+    // Act / Assert
+    assertThatThrownBy(() -> loader.postProcessEnvironment(env, new SpringApplication()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("nope");
   }
 
   @Test
@@ -71,7 +84,8 @@ class ConfigTest {
             "tcp://localhost:1883",
             "u",
             "site_001",
-            "http://localhost:8081");
+            "http://localhost:8081",
+            "http://localhost:8080");
 
     // Act
     var violations = validator.validate(bad);

@@ -1,4 +1,4 @@
-local:
+local: &local
   logLevel: INFO
   port: 8080
   host: 127.0.0.1
@@ -9,6 +9,14 @@ local:
   siteId: site_001
   # mock-derms-dispatch-api's own local default port — not a real utility, see its own readme.
   utilityMirrorUrl: http://localhost:8081
+  # Where the utility should push DERControl Notifications. Goes out in this service's own
+  # Subscription, so it has to be reachable from the utility rather than from here.
+  publicBaseUrl: http://localhost:8080
+
+# The gitlab-runner host exports ENV=ci (tooling-playbooks/gitlab-runner-setup.yml), so `ci` is a
+# real profile and needs a real block. Identical to local; the integration tests point Postgres, the
+# broker and any outbound URL at their own containers.
+ci: *local
 
 beta:
   logLevel: INFO
@@ -23,3 +31,4 @@ beta:
   # deployed service, it stands in for an external utility). Real value TBD once/if this gets a
   # real beta target.
   utilityMirrorUrl: http://mock-derms-dispatch-api:8080
+  publicBaseUrl: http://der-control-api:8080

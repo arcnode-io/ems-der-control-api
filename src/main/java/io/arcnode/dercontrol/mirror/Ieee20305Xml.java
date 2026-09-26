@@ -4,6 +4,7 @@ import io.arcnode.dercontrol.mirror.ieee20305.DERControl;
 import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
 import io.arcnode.dercontrol.mirror.ieee20305.Notification;
 import io.arcnode.dercontrol.mirror.ieee20305.NotificationElement;
+import io.arcnode.dercontrol.mirror.ieee20305.SubscriptionElement;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -30,6 +31,19 @@ public final class Ieee20305Xml {
   private static final String SCHEMA_RESOURCE = "xsd/sep.xsd";
 
   private Ieee20305Xml() {}
+
+  /** Marshals a {@code SubscriptionElement} as the XML document's root element. */
+  public static String marshal(SubscriptionElement subscription) {
+    try {
+      JAXBContext context = JAXBContext.newInstance(SubscriptionElement.class);
+      Marshaller marshaller = context.createMarshaller();
+      StringWriter writer = new StringWriter();
+      marshaller.marshal(subscription, writer);
+      return writer.toString();
+    } catch (JAXBException e) {
+      throw new IllegalStateException("failed to marshal Subscription", e);
+    }
+  }
 
   /** Marshals a {@code MirrorUsagePointElement} as the XML document's root element. */
   public static String marshal(MirrorUsagePointElement usagePoint) {
