@@ -47,6 +47,11 @@ public final class DerControlNotificationParser {
       throw new IllegalArgumentException(
           "DERControl is missing a mandatory field (mRID, EventStatus or interval)");
     }
+    // Reason: the schema's UInt32 permits 0, but a zero-length control commands nothing and this
+    // service would publish a setpoint no one can comply with.
+    if (control.getInterval().getDuration() <= 0) {
+      throw new IllegalArgumentException("DERControl interval duration must be positive");
+    }
     return new DerControlRequest(
         HexFormat.of().formatHex(control.getMRID().getValue()),
         DerControlStatus.fromCode(control.getEventStatus().getCurrentStatus()),

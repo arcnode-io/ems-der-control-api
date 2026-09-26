@@ -24,10 +24,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.util.ReflectionTestUtils;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Unit — mocked repository + publisher, real JsonMapper (pure serializer, not worth mocking). AAA.
+ * Unit — mocked repository + publisher. The received document is stored verbatim, so these tests
+ * pass a stand-in for it rather than a full Notification; parsing is covered by
+ * DerControlNotificationParserTest. AAA.
  */
 @ExtendWith(MockitoExtension.class)
 class DerEventServiceTest {
@@ -35,14 +36,17 @@ class DerEventServiceTest {
   private static final Instant START = Instant.parse("2026-09-08T14:00:00Z");
   private static final Instant NOW = Instant.parse("2026-09-08T13:00:00Z");
 
+  // Reason: DerEvent.rawPayload keeps the document exactly as it arrived; its content is
+  // irrelevant to this service, which never re-reads it.
+  private static final String RECEIVED_DOCUMENT = "<Notification/>";
+
   @Mock private DerEventRepository repository;
   @Mock private DispatchPublisher publisher;
   @Mock private TaskScheduler scheduler;
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-  private final JsonMapper mapper = JsonMapper.builder().build();
 
   private DerEventService service() {
-    return new DerEventService(repository, publisher, mapper, clock, scheduler);
+    return new DerEventService(repository, publisher, clock, scheduler);
   }
 
   private static DerControlRequest request(String mrid, DerControlStatus status) {
@@ -66,7 +70,11 @@ class DerEventServiceTest {
 
     // Act
     DerEventResponse result =
-        service().ingest(request("mrid-1", DerControlStatus.ACTIVE), TestCerts.HEADER_VALUE);
+        service()
+            .ingest(
+                request("mrid-1", DerControlStatus.ACTIVE),
+                RECEIVED_DOCUMENT,
+                TestCerts.HEADER_VALUE);
 
     // Assert
     assertThat(result.mrid()).isEqualTo("mrid-1");
@@ -100,7 +108,11 @@ class DerEventServiceTest {
 
     // Act
     DerEventResponse result =
-        service().ingest(request("mrid-1", DerControlStatus.CANCELLED), TestCerts.HEADER_VALUE);
+        service()
+            .ingest(
+                request("mrid-1", DerControlStatus.CANCELLED),
+                RECEIVED_DOCUMENT,
+                TestCerts.HEADER_VALUE);
 
     // Assert
     assertThat(result.status()).isEqualTo(DerControlStatus.CANCELLED);
@@ -155,7 +167,9 @@ class DerEventServiceTest {
     given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
 
     // Act
-    service().ingest(request("mrid-1", DerControlStatus.ACTIVE), TestCerts.HEADER_VALUE);
+    service()
+        .ingest(
+            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
 
     // Assert: PENDING/ARMED visible right away, and re-armed for when the interval opens
     verify(publisher, times(1)).publish(any(DerEvent.class));
@@ -175,7 +189,7 @@ class DerEventServiceTest {
             new DerControlRequest.ControlBase(-1_000_000.0, true, null, null));
 
     // Act
-    service().ingest(openRequest, TestCerts.HEADER_VALUE);
+    service().ingest(openRequest, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
 
     // Assert: still publishes once, but nothing left to arm
     verify(publisher, times(1)).publish(any(DerEvent.class));

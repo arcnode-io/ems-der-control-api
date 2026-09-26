@@ -1,16 +1,14 @@
 package io.arcnode.dercontrol.derevent.dto;
 
 import io.arcnode.dercontrol.derevent.DerControlStatus;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@code POST /der-events} body — MVP subset of IEEE 2030.5 {@code DERControl}. Only the fields the
- * dispatch publisher needs: identity, lifecycle status, the event window, and the setpoint.
+ * This service's internal form of an IEEE 2030.5 {@code DERControl} — the fields the dispatch
+ * publisher needs: identity, lifecycle status, the event window, and the setpoint. Built only by
+ * {@link io.arcnode.dercontrol.derevent.DerControlNotificationParser}, which is where an inbound
+ * document is checked, so these components carry no bean-validation constraints of their own.
  *
  * @param mrid 2030.5 mRID — the event's stable identity
  * @param eventStatus current {@code EventStatus.currentStatus}
@@ -18,16 +16,13 @@ import org.jspecify.annotations.Nullable;
  * @param derControlBase the commanded setpoint
  */
 public record DerControlRequest(
-    @NotBlank String mrid,
-    @NotNull DerControlStatus eventStatus,
-    @NotNull @Valid Interval interval,
-    @NotNull @Valid ControlBase derControlBase) {
+    String mrid, DerControlStatus eventStatus, Interval interval, ControlBase derControlBase) {
 
   /**
    * @param start window start ({@code DateTimeInterval.start})
    * @param durationSeconds window length ({@code DateTimeInterval.duration})
    */
-  public record Interval(@NotNull Instant start, @Positive long durationSeconds) {}
+  public record Interval(Instant start, long durationSeconds) {}
 
   /**
    * {@code DERControlBase} subset. All fields optional — a status-only re-transmission (e.g.

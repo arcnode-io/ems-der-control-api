@@ -13,21 +13,28 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** DERControl ingest over real HTTP against real Postgres + a real broker. */
+/** IEEE 2030.5 DERControl ingest over real HTTP against real Postgres + a real broker. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
 @Testcontainers(disabledWithoutDocker = true)
 class DerEventResourceIT extends AbstractBrokerIT {
 
-  private static final String VALID_BODY =
+  // Reason: EventStatus.currentStatus codes, per sep.xsd.
+  private static final int ACTIVE = 1;
+  private static final int COMPLETED = 5;
+
+  /** interval is mandatory on Event, and JAXB unmarshalling alone will not reject its absence. */
+  private static final String NO_INTERVAL =
       """
-      {
-        "mrid": "%s",
-        "eventStatus": "ACTIVE",
-        "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
-        "derControlBase": { "opModTargetW": -1500000.0, "opModEnergize": true }
-      }
-      """;
+      <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
+      <subscribedResource>https://utility.invalid/derp/1/derc</subscribedResource>\
+      <Resource xsi:type="DERControlList" all="1" results="1"\
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DERControl>\
+      <mRID>000000000000000000000000000000ff</mRID><creationTime>1789221600</creationTime>\
+      <EventStatus><currentStatus>1</currentStatus><dateTime>1789221600</dateTime>\
+      <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
+      </DERControl></Resource><status>0</status>\
+      <subscriptionURI>https://utility.invalid/sub/1</subscriptionURI></Notification>""";
 
   @LocalServerPort int port;
   RestTestClient rest;
@@ -40,14 +47,14 @@ class DerEventResourceIT extends AbstractBrokerIT {
   @Test
   void postThenGetByMridRoundTrips() {
     // Arrange
-    String mrid = "mrid-post-get";
+    String mrid = SepXml.mrid("post-get");
 
     // Act: create
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body(VALID_BODY.formatted(mrid))
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
         .exchange()
         .expectStatus()
         .isCreated()
@@ -75,12 +82,12 @@ class DerEventResourceIT extends AbstractBrokerIT {
   @Test
   void retransmittingWithCompletedStatusClosesTheEventOverRealHttp() {
     // Arrange: dispatch, then close via natural duration expiry (COMPLETED), not cancellation
-    String mrid = "mrid-completed";
+    String mrid = SepXml.mrid("completed");
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body(VALID_BODY.formatted(mrid))
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
         .exchange()
         .expectStatus()
         .isCreated();
@@ -88,18 +95,9 @@ class DerEventResourceIT extends AbstractBrokerIT {
     // Act: retransmit the same mrid with eventStatus=COMPLETED
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body(
-            """
-            {
-              "mrid": "%s",
-              "eventStatus": "COMPLETED",
-              "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
-              "derControlBase": {}
-            }
-            """
-                .formatted(mrid))
+        .body(SepXml.notification(mrid, COMPLETED, SepXml.NO_SETPOINT))
         .exchange()
         .expectStatus()
         .isCreated();
@@ -119,9 +117,9 @@ class DerEventResourceIT extends AbstractBrokerIT {
   void rejectsBodyMissingIntervalWith400() {
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body("{\"mrid\":\"mrid-bad\",\"eventStatus\":\"ACTIVE\"}")
+        .body(NO_INTERVAL)
         .exchange()
         .expectStatus()
         .isBadRequest();
@@ -131,13 +129,13 @@ class DerEventResourceIT extends AbstractBrokerIT {
   void rejectsMissingClientCertHeaderWith400() {
     // Arrange: der-control-ingress always sets this in prod — a request without it never got
     // through the gateway's own cert check, so this can only happen hitting the app directly.
-    String mrid = "mrid-no-cert";
+    String mrid = SepXml.mrid("no-cert");
 
     // Act / Assert
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(VALID_BODY.formatted(mrid))
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
         .exchange()
         .expectStatus()
         .isBadRequest();
@@ -151,12 +149,12 @@ class DerEventResourceIT extends AbstractBrokerIT {
   @Test
   void listsByStatus() {
     // Arrange
-    String mrid = "mrid-list-active";
+    String mrid = SepXml.mrid("list-active");
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body(VALID_BODY.formatted(mrid))
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
         .exchange()
         .expectStatus()
         .isCreated();

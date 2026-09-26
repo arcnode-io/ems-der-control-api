@@ -16,7 +16,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 /** Business logic for the DERControl ingest resource. */
 @Service
@@ -26,19 +25,16 @@ public class DerEventService {
 
   private final DerEventRepository repository;
   private final DispatchPublisher publisher;
-  private final JsonMapper mapper;
   private final Clock clock;
   private final TaskScheduler scheduler;
 
   public DerEventService(
       DerEventRepository repository,
       DispatchPublisher publisher,
-      JsonMapper mapper,
       Clock clock,
       TaskScheduler scheduler) {
     this.repository = repository;
     this.publisher = publisher;
-    this.mapper = mapper;
     this.clock = clock;
     this.scheduler = scheduler;
   }
@@ -54,13 +50,14 @@ public class DerEventService {
    *     PEM) — identity of the utility/aggregator that sent this event, recorded for audit
    */
   @Transactional
-  public DerEventResponse ingest(DerControlRequest request, String clientCertHeader) {
+  public DerEventResponse ingest(
+      DerControlRequest request, String receivedDocument, String clientCertHeader) {
     String lfdi = ClientIdentity.fromHeaderValue(clientCertHeader).lfdi();
     DerEvent event =
         repository
             .findByMrid(request.mrid())
             .map(existing -> apply(existing, request, lfdi))
-            .orElseGet(() -> fromRequest(request, lfdi));
+            .orElseGet(() -> fromRequest(request, receivedDocument, lfdi));
 
     DerEvent saved = repository.save(event);
     if (LOG.isInfoEnabled()) {
@@ -134,7 +131,7 @@ public class DerEventService {
     return repository.findByStatus(status).stream().map(DerEventResponse::from).toList();
   }
 
-  private DerEvent fromRequest(DerControlRequest request, String lfdi) {
+  private DerEvent fromRequest(DerControlRequest request, String receivedDocument, String lfdi) {
     return new DerEvent(
         request.mrid(),
         request.eventStatus(),
@@ -144,7 +141,7 @@ public class DerEventService {
         request.derControlBase().opModEnergize(),
         request.derControlBase().opModImpLimW(),
         request.derControlBase().opModExpLimW(),
-        mapper.writeValueAsString(request),
+        receivedDocument,
         lfdi);
   }
 

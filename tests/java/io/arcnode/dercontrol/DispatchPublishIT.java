@@ -32,17 +32,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 class DispatchPublishIT extends AbstractBrokerIT {
 
-  private static final String VALID_BODY =
-      """
-      {
-        "mrid": "%s",
-        "eventStatus": "ACTIVE",
-        "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
-        "derControlBase": { "opModTargetW": -1500000.0, "opModEnergize": true }
-      }
-      """;
-
   private record ReceivedSample(String topic, String payload) {}
+
+  // Reason: EventStatus.currentStatus code for Active, per sep.xsd.
+  private static final int ACTIVE = 1;
 
   @LocalServerPort int port;
   @Autowired Config config;
@@ -84,14 +77,14 @@ class DispatchPublishIT extends AbstractBrokerIT {
   @Test
   void postPublishesSetpointToBroker() throws Exception {
     // Arrange
-    String mrid = "mrid-publish-it";
+    String mrid = SepXml.mrid("publish-it");
 
     // Act
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
-        .body(VALID_BODY.formatted(mrid))
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
         .exchange()
         .expectStatus()
         .isCreated();
@@ -108,22 +101,13 @@ class DispatchPublishIT extends AbstractBrokerIT {
   void postWithEnvelopeLimitsPublishesToOperatingEnvelope() throws Exception {
     // Arrange — opModImpLimW/opModExpLimW travel in the same DERControlBase payload as
     // opModTargetW, per the SME-approved envelope-wiring handoff.
-    String mrid = "mrid-envelope-it";
-    String body =
-        """
-        {
-          "mrid": "%s",
-          "eventStatus": "ACTIVE",
-          "interval": { "start": "2026-09-08T14:00:00Z", "durationSeconds": 3600 },
-          "derControlBase": { "opModImpLimW": 500000.0, "opModExpLimW": 300000.0 }
-        }
-        """
-            .formatted(mrid);
+    String mrid = SepXml.mrid("envelope-it");
+    String body = SepXml.notification(mrid, ACTIVE, SepXml.ENVELOPE_500KW_IMPORT_300KW_EXPORT);
 
     // Act
     rest.post()
         .uri("/der-events")
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
         .header("X-SSL-Client-Cert", TestCerts.HEADER_VALUE)
         .body(body)
         .exchange()
