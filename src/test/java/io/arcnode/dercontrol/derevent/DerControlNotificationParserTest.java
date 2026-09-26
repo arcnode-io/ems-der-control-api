@@ -21,14 +21,36 @@ class DerControlNotificationParserTest {
       <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
       <subscribedResource>https://mock-derms.invalid/derp/1/derc</subscribedResource>\
       <createdDateTime>1790359200</createdDateTime>\
-      <Resource xsi:type="DERControl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\
+      <Resource xsi:type="DERControlList" all="1" results="1"\
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DERControl>\
       <mRID>0123456789ABCDEF0123456789ABCDEF</mRID><creationTime>1790359200</creationTime>\
       <EventStatus><currentStatus>1</currentStatus><dateTime>1790359200</dateTime>\
       <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
       <interval><duration>360</duration><start>1790359205</start></interval>\
       <DERControlBase><opModEnergize>true</opModEnergize>\
       <opModTargetW><multiplier>2</multiplier><value>15000</value></opModTargetW>\
-      </DERControlBase></Resource><status>0</status>\
+      </DERControlBase></DERControl></Resource><status>0</status>\
+      <subscriptionURI>https://mock-derms.invalid/sub/1</subscriptionURI></Notification>\
+      """;
+
+  private static final String ENVELOPE =
+      """
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
+      <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
+      <subscribedResource>https://mock-derms.invalid/derp/1/derc</subscribedResource>\
+      <createdDateTime>1790359200</createdDateTime>\
+      <Resource xsi:type="DERControlList" all="1" results="1"\
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DERControl>\
+      <mRID>0123456789ABCDEF0123456789ABCDEF</mRID><creationTime>1790359200</creationTime>\
+      <EventStatus><currentStatus>1</currentStatus><dateTime>1790359200</dateTime>\
+      <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
+      <interval><duration>360</duration><start>1790359205</start></interval>\
+      <DERControlBase>\
+      <csipaus:opModImpLimW xmlns:csipaus="https://csipaus.org/ns/v1.3">\
+      <multiplier>2</multiplier><value>5000</value></csipaus:opModImpLimW>\
+      <csipaus:opModExpLimW xmlns:csipaus="https://csipaus.org/ns/v1.3">\
+      <multiplier>0</multiplier><value>0</value></csipaus:opModExpLimW>\
+      </DERControlBase></DERControl></Resource><status>0</status>\
       <subscriptionURI>https://mock-derms.invalid/sub/1</subscriptionURI></Notification>\
       """;
 
@@ -92,5 +114,47 @@ class DerControlNotificationParserTest {
     // Act / Assert
     assertThatThrownBy(() -> DerControlNotificationParser.parse("{\"mrid\":\"abc\"}"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void decodesCsipAusEnvelopeLimitsOutOfTheExtensionSlot() {
+    // Act
+    DerControlRequest request = DerControlNotificationParser.parse(ENVELOPE);
+
+    // Assert: 500 kW import ceiling, non-export site
+    assertThat(request.derControlBase().opModImpLimW()).isEqualTo(500_000.0);
+    assertThat(request.derControlBase().opModExpLimW()).isEqualTo(0.0);
+  }
+
+  @Test
+  void leavesEnvelopeLimitsAbsentOnAPlainCurtailment() {
+    // Act
+    DerControlRequest request = DerControlNotificationParser.parse(CURTAILMENT);
+
+    // Assert
+    assertThat(request.derControlBase().opModImpLimW()).isNull();
+    assertThat(request.derControlBase().opModExpLimW()).isNull();
+  }
+
+  @Test
+  void rejectsADerControlMissingItsMandatoryInterval() {
+    // Arrange: JAXB unmarshalling alone does not enforce minOccurs, so the parser has to
+    String noInterval =
+        """
+        <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
+        <subscribedResource>https://mock-derms.invalid/derp/1/derc</subscribedResource>\
+        <Resource xsi:type="DERControlList" all="1" results="1"\
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DERControl>\
+        <mRID>0123456789ABCDEF0123456789ABCDEF</mRID><creationTime>1790359200</creationTime>\
+        <EventStatus><currentStatus>1</currentStatus><dateTime>1790359200</dateTime>\
+        <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
+        </DERControl></Resource><status>0</status>\
+        <subscriptionURI>https://mock-derms.invalid/sub/1</subscriptionURI></Notification>\
+        """;
+
+    // Act / Assert
+    assertThatThrownBy(() -> DerControlNotificationParser.parse(noInterval))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mandatory");
   }
 }
