@@ -4,6 +4,7 @@ import io.arcnode.dercontrol.ClientIdentity;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.DispatchPublisher;
+import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -25,16 +26,19 @@ public class DerEventService {
 
   private final DerEventRepository repository;
   private final DispatchPublisher publisher;
+  private final EnvelopeFeedMonitor envelopeFeedMonitor;
   private final Clock clock;
   private final TaskScheduler scheduler;
 
   public DerEventService(
       DerEventRepository repository,
       DispatchPublisher publisher,
+      EnvelopeFeedMonitor envelopeFeedMonitor,
       Clock clock,
       TaskScheduler scheduler) {
     this.repository = repository;
     this.publisher = publisher;
+    this.envelopeFeedMonitor = envelopeFeedMonitor;
     this.clock = clock;
     this.scheduler = scheduler;
   }
@@ -69,6 +73,13 @@ public class DerEventService {
           saved.getEnergize());
     }
     publisher.publish(saved);
+    // Reason: only the envelope schedule says anything about whether the envelope is still
+    // arriving.
+    // The envelope carries the interval it is valid for, so the monitor needs no cadence constant.
+    if (saved.isEnvelopeOnly()) {
+      envelopeFeedMonitor.recordEnvelope(
+          saved.getIntervalStart().plusSeconds(saved.getDurationSeconds()));
+    }
     armFutureRepublish(saved);
     return DerEventResponse.from(saved);
   }

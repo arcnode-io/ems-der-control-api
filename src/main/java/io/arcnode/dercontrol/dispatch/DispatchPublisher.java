@@ -121,6 +121,16 @@ public class DispatchPublisher {
         new BooleanSample(clock.instant().toString(), overdelivering));
   }
 
+  /**
+   * Publish the operating envelope's feed health. The HMI's stale-feed alarm reads this channel,
+   * and {@link EnvelopeFeedMonitor} decides when it changes.
+   *
+   * @param label an {@code operating_envelope.status} label — {@code OK} or {@code STALE}
+   */
+  public void publishEnvelopeStatus(String label) {
+    send(ENVELOPE_DEVICE_ID, "status", "none", new EnumSample(clock.instant().toString(), label));
+  }
+
   private void send(String deviceId, String measurement, String unit, Object sample) {
     String topic = TOPIC.formatted(config.siteId(), deviceId, measurement, unit);
     try {

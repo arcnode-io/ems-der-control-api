@@ -12,6 +12,7 @@ import io.arcnode.dercontrol.TestCerts;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.DispatchPublisher;
+import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -42,11 +43,12 @@ class DerEventServiceTest {
 
   @Mock private DerEventRepository repository;
   @Mock private DispatchPublisher publisher;
+  @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
   @Mock private TaskScheduler scheduler;
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
   private DerEventService service() {
-    return new DerEventService(repository, publisher, clock, scheduler);
+    return new DerEventService(repository, publisher, envelopeFeedMonitor, clock, scheduler);
   }
 
   private static DerControlRequest request(String mrid, DerControlStatus status) {
@@ -312,5 +314,40 @@ class DerEventServiceTest {
 
     // Assert
     assertThat(result).extracting(DerEventResponse::mrid).containsExactly("a", "b");
+  }
+
+  @Test
+  void anEnvelopeArrivalTellsTheFeedMonitorHowLongItIsValidFor() {
+    // Arrange: an envelope-only control — limits, no setpoint
+    DerControlRequest envelope =
+        new DerControlRequest(
+            "mrid-envelope",
+            DerControlStatus.ACTIVE,
+            new DerControlRequest.Interval(START, 10L),
+            new DerControlRequest.ControlBase(null, null, 500_000.0, 0.0));
+    given(repository.findByMrid("mrid-envelope")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(call -> call.getArgument(0));
+
+    // Act
+    service().ingest(envelope, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
+
+    // Assert: the envelope declares its own validity, so staleness needs no tuned constant
+    verify(envelopeFeedMonitor).recordEnvelope(START.plusSeconds(10L));
+  }
+
+  @Test
+  void aCurtailmentDoesNotTouchTheEnvelopeFeedMonitor() {
+    // Arrange: a target-mode control is not the envelope schedule, so it says nothing about whether
+    // the envelope is still arriving
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(call -> call.getArgument(0));
+
+    // Act
+    service()
+        .ingest(
+            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
+
+    // Assert
+    verify(envelopeFeedMonitor, never()).recordEnvelope(any());
   }
 }
