@@ -1,0 +1,120 @@
+package io.arcnode.dercontrol.dispatch;
+
+import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
+import org.eclipse.paho.mqttv5.client.IMqttToken;
+import org.eclipse.paho.mqttv5.client.MqttCallback;
+import org.eclipse.paho.mqttv5.client.MqttClient;
+import org.eclipse.paho.mqttv5.client.MqttDisconnectResponse;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
+import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * Re-establishes this service's MQTT subscriptions after a broker restart.
+ *
+ * <p>A subscription is broker-side session state, not client-side. The {@code MqttSubscription} and
+ * listener held here are only a routing table for inbound messages — they do not make the broker
+ * send anything. Paho's {@code automaticReconnect} restores the socket but never re-sends
+ * SUBSCRIBE, and {@code cleanStart} defaults to true, so the reconnect asks for a fresh session
+ * with no subscriptions in it. Without this, the service publishes normally and receives nothing,
+ * forever, with no error and a passing health check.
+ *
+ * <p>Confirmed against a real HiveMQ container restart: same client, same listener, publish after
+ * the restart succeeds and the message is never delivered back.
+ *
+ * <p>The subscribers are listed explicitly rather than collected through an interface, so what gets
+ * re-established is readable in one place. A new subscriber has to be added here too.
+ */
+@Component
+public class MqttReconnectHandler implements MqttCallback {
+
+  private final MqttClient mqtt;
+
+  private static final Logger LOG = LoggerFactory.getLogger(MqttReconnectHandler.class);
+
+  private final DeliveryShortfallMonitor shortfallMonitor;
+  private final DispatchCommandSubscriber commandSubscriber;
+  private final ActualActivePowerSubscriber actualPowerSubscriber;
+
+  public MqttReconnectHandler(
+      MqttClient mqtt,
+      DeliveryShortfallMonitor shortfallMonitor,
+      DispatchCommandSubscriber commandSubscriber,
+      ActualActivePowerSubscriber actualPowerSubscriber) {
+    this.mqtt = mqtt;
+    this.shortfallMonitor = shortfallMonitor;
+    this.commandSubscriber = commandSubscriber;
+    this.actualPowerSubscriber = actualPowerSubscriber;
+  }
+
+  /**
+   * Installs this handler. Takes no argument: an {@code @EventListener} method's only parameter is
+   * the event itself, so injecting the client here would silently never run. Per-topic listeners
+   * registered by {@code subscribe} keep receiving their own messages, so taking the callback slot
+   * does not divert message delivery.
+   */
+  @EventListener(ApplicationReadyEvent.class)
+  public void install() {
+    mqtt.setCallback(this);
+  }
+
+  @Override
+  public void connectComplete(boolean reconnect, String serverUri) {
+    if (!reconnect) {
+      return;
+    }
+    LOG.warn("🔌 Reconnected to {} — re-establishing subscriptions", serverUri);
+    resubscribe("delivery shortfall", shortfallMonitor::subscribe);
+    resubscribe("dispatch commands", commandSubscriber::subscribe);
+    resubscribe("actual active power", actualPowerSubscriber::subscribe);
+  }
+
+  /** One failure must not leave the remaining subscriptions unrestored. */
+  private void resubscribe(String what, Resubscribe action) {
+    try {
+      action.run();
+      LOG.info("🔌 Resubscribed: {}", what);
+    } catch (MqttException e) {
+      LOG.error("🔌 Could not resubscribe {} — this service is deaf on it until restart", what, e);
+    }
+  }
+
+  @FunctionalInterface
+  private interface Resubscribe {
+    void run() throws MqttException;
+  }
+
+  @Override
+  public void disconnected(MqttDisconnectResponse response) {
+    if (LOG.isWarnEnabled()) {
+      LOG.warn("🔌 Broker connection lost: {}", response.getReasonString());
+    }
+  }
+
+  @Override
+  public void mqttErrorOccurred(MqttException exception) {
+    if (LOG.isWarnEnabled()) {
+      LOG.warn("🔌 MQTT error: {}", exception.getMessage());
+    }
+  }
+
+  @Override
+  public void messageArrived(String topic, MqttMessage message) {
+    // Per-topic listeners registered at subscribe time handle delivery; nothing routes here.
+  }
+
+  @Override
+  public void deliveryComplete(IMqttToken token) {
+    // Publishes are fire-and-forget at QoS 0.
+  }
+
+  @Override
+  public void authPacketArrived(int reasonCode, MqttProperties properties) {
+    // Enhanced authentication isn't used.
+  }
+}
