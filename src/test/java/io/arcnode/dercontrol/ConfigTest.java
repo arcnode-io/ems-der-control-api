@@ -93,4 +93,22 @@ class ConfigTest {
     // Assert
     assertThat(violations).hasSize(2);
   }
+
+  @Test
+  void deviceDemoOverridesOnlySiteIdAndInheritsTheContainerHostnames() {
+    // Arrange: device-demo is merged from beta — a localhost broker or Postgres inside the compose
+    // stack is the failure this guards, and siteId keys every MQTT topic
+    MockEnvironment env = new MockEnvironment().withProperty("ENV", "device-demo");
+
+    // Act
+    loader.postProcessEnvironment(env, new SpringApplication());
+
+    // Assert
+    assertThat(env.getProperty("app.siteId")).isEqualTo("demo-site");
+    assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://hivemq:1883");
+    assertThat(env.getProperty("app.postgresHost")).isEqualTo("postgres");
+    assertThat(env.getProperty("app.utilityMirrorUrl"))
+        .isEqualTo("http://mock-derms-dispatch-api:8080");
+    assertThat(env.getProperty("app.publicBaseUrl")).isEqualTo("http://der-control-api:8080");
+  }
 }

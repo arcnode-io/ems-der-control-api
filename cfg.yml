@@ -18,7 +18,7 @@ local: &local
 # broker and any outbound URL at their own containers.
 ci: *local
 
-beta:
+beta: &beta
   logLevel: INFO
   port: 8080
   host: 0.0.0.0
@@ -27,8 +27,15 @@ beta:
   mqttBrokerUrl: tcp://hivemq:1883
   mqttUsername: arcnode_der_control_api
   siteId: arcnode_beta
-  # Placeholder — mock-derms-dispatch-api isn't in platform-api's compose stacks (it's not a real
-  # deployed service, it stands in for an external utility). Real value TBD once/if this gets a
-  # real beta target.
+  # mock-derms-dispatch-api stands in for an external utility and runs in platform-api's compose
+  # stacks under this service name.
   utilityMirrorUrl: http://mock-derms-dispatch-api:8080
   publicBaseUrl: http://der-control-api:8080
+
+# The full device demo: this service inside the compose stack, receiving DERControls from
+# mock-derms-dispatch-api and republishing them onto the bus. Merged from beta for the container
+# hostnames rather than copied, so the two cannot drift. One override: siteId matches every other
+# service's device-demo block and the HMI's, since every MQTT topic is keyed by it.
+device-demo:
+  <<: *beta
+  siteId: demo-site
