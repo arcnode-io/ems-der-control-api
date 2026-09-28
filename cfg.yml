@@ -22,8 +22,9 @@ beta: &beta
   mqttBrokerUrl: tcp://hivemq:1883
   mqttUsername: arcnode_der_control_api
   siteId: arcnode_beta
-  # mock-derms-dispatch-api stands in for an external utility and runs in platform-api's compose
-  # stacks under this service name.
+  # Placeholder. mock-derms-dispatch-api is a stand-in for an external utility and lives outside
+  # this product's trust boundary (ems/readme.md's own diagram puts it in the mock_derms domain), so
+  # it is not deployed alongside us. A real beta target is a real utility's endpoint, TBD.
   utilityMirrorUrl: http://mock-derms-dispatch-api:8080
   publicBaseUrl: http://der-control-api:8080
 
