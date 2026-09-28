@@ -32,19 +32,6 @@ class ConfigTest {
   }
 
   @Test
-  void resolvesTheCiBlockTheRunnerAsksFor() {
-    // Arrange: the gitlab-runner host exports ENV=ci, so `ci` names a real block
-    MockEnvironment env = new MockEnvironment().withProperty("ENV", "ci");
-
-    // Act
-    loader.postProcessEnvironment(env, new SpringApplication());
-
-    // Assert
-    assertThat(env.getProperty("app.postgresHost")).isEqualTo("localhost");
-    assertThat(env.getProperty("app.e2e", Boolean.class)).isFalse();
-  }
-
-  @Test
   void failsLoudlyWhenEnvNamesNoBlock() {
     // Arrange: silently falling back to local would run the wrong configuration and present as a
     // behaviour bug rather than a misconfiguration
@@ -104,7 +91,7 @@ class ConfigTest {
     loader.postProcessEnvironment(env, new SpringApplication());
 
     // Assert
-    assertThat(env.getProperty("app.siteId")).isEqualTo("demo-site");
+    assertThat(env.getProperty("app.siteId")).isEqualTo("demo_site");
     assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://hivemq:1883");
     assertThat(env.getProperty("app.postgresHost")).isEqualTo("postgres");
     assertThat(env.getProperty("app.utilityMirrorUrl"))

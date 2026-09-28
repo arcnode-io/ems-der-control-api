@@ -1,4 +1,4 @@
-local: &local
+local:
   logLevel: INFO
   port: 8080
   host: 127.0.0.1
@@ -12,11 +12,6 @@ local: &local
   # Where the utility should push DERControl Notifications. Goes out in this service's own
   # Subscription, so it has to be reachable from the utility rather than from here.
   publicBaseUrl: http://localhost:8080
-
-# The gitlab-runner host exports ENV=ci (tooling-playbooks/gitlab-runner-setup.yml), so `ci` is a
-# real profile and needs a real block. Identical to local; the integration tests point Postgres, the
-# broker and any outbound URL at their own containers.
-ci: *local
 
 beta: &beta
   logLevel: INFO
@@ -36,6 +31,7 @@ beta: &beta
 # mock-derms-dispatch-api and republishing them onto the bus. Merged from beta for the container
 # hostnames rather than copied, so the two cannot drift. One override: siteId matches every other
 # service's device-demo block and the HMI's, since every MQTT topic is keyed by it.
+# snake_case per ADR-002 §16 — the identifier regex allows no hyphens.
 device-demo:
   <<: *beta
-  siteId: demo-site
+  siteId: demo_site

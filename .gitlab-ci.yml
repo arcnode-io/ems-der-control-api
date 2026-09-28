@@ -10,6 +10,10 @@ stages:
 
 check:
   stage: check
+  # Reason: the runner host exports ENV=ci for the embedded HIL rig. This service has no HIL
+  # profile, so the job names the one it wants rather than inheriting a flag meant for hardware.
+  variables:
+    ENV: local
   before_script:
     - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
     - |
