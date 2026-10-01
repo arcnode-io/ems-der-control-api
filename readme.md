@@ -13,10 +13,9 @@ persists them, and republishes the `DERControlBase` setpoints onto the arcnode M
 measurement samples on a `der_dispatch` singleton device — the same two-family topic contract
 every other EMS telemetry feed uses.
 
-The IP-native twin of the DNP3 path: `dlr-rtu-firmware` → `ems-industrial-gateway` carries
-curtailment commands over DNP3; this service carries the 2030.5/OpenADR half the arcnode site page
-lists as "Curtailment commands (DNP3/OpenADR)" — including `operating_envelope`'s import/export
-limits, which have no DNP3 source and are published from here (see Status below).
+`operating_envelope`'s import/export limits are published from here too: the utility's
+connection-point limits arrive in the same `DERControlBase` as the setpoints, carried by the
+CSIP-AUS `opModImpLimW`/`opModExpLimW` extensions (see Status below).
 
 Instance of `~/engineering-with-ai/java-spring-jpa`.
 
