@@ -180,6 +180,11 @@
             </goals>
             <configuration>
               <url>https://standards.ieee.org/wp-content/uploads/2024/12/2030.5-2023_downloads.zip</url>
+              <!-- standards.ieee.org read-times-out often enough to redden a push on its own,
+                   and the schema can't be committed (IEEE-copyrighted), so the fetch has to
+                   tolerate a slow server rather than fail the build on the first attempt. -->
+              <retries>3</retries>
+              <readTimeOut>60000</readTimeOut>
               <sha256>44ef0bd26f59fee3d4a4be0951ec9d5985c6bc3f377dd8f4908f25675174d6d3</sha256>
               <unpack>true</unpack>
               <outputDirectory>${project.build.directory}/ieee-schema</outputDirectory>
