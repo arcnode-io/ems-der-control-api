@@ -2,6 +2,7 @@ package io.arcnode.dercontrol.dispatch;
 
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DerEventState;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import io.arcnode.dercontrol.dispatch.dto.BooleanSample;
@@ -67,16 +68,21 @@ public class DispatchPublisher {
     // leave event_active permanently true and der_event_state permanently ACTIVE — the HMI would
     // show a curtailment always in progress. An envelope constrains; it commands nothing.
     if (!event.isEnvelopeOnly()) {
+      DerEventState state = event.derEventState(mode, now);
       Double targetActivePowerW = event.getTargetActivePowerW();
-      if (targetActivePowerW != null) {
+      // Reason: target_active_power is retained, so an event that is over has to say so on the
+      // channel itself. Leaving the last setpoint there tells any consumer that reads retained
+      // state — a gateway restarting, a new subscriber — to keep curtailing a dispatch the utility
+      // ended, and event_active alone doesn't undo a stale number. IDLE is a terminal utility
+      // status, REJECTED is an operator refusal; neither commands anything.
+      boolean released = state == DerEventState.IDLE || state == DerEventState.REJECTED;
+      if (released) {
+        send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, 0.0));
+      } else if (targetActivePowerW != null) {
         send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
       }
       send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
-      send(
-          DEVICE_ID,
-          "der_event_state",
-          "none",
-          new EnumSample(ts, event.derEventState(mode, now).name()));
+      send(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, state.name()));
       Boolean energize = event.getEnergize();
       if (energize != null) {
         send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));

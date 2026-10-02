@@ -143,6 +143,37 @@ class DispatchPublisherTest {
   }
 
   @Test
+  void publishesAnExplicitZeroTargetWhenTheEventIsOver() throws Exception {
+    // Arrange: a terminal utility status, which derEventState reports as IDLE.
+    DerEvent e = event(239020.0, true, DerControlStatus.COMPLETED);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert: 0, not the event's own target. target_active_power is retained, so leaving the old
+    // setpoint there tells a consumer that joins later to keep curtailing an event that ended.
+    verify(mqtt)
+        .publish(eq(BASE + "target_active_power/watts"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isZero();
+  }
+
+  @Test
+  void publishesAnExplicitZeroTargetWhenTheOperatorRejects() throws Exception {
+    // Arrange: rejected in manual mode — the dispatch will never run.
+    given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
+    DerEvent e = event(239020.0, true, DerControlStatus.ACTIVE);
+    e.setApproved(false);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt)
+        .publish(eq(BASE + "target_active_power/watts"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isZero();
+  }
+
+  @Test
   void skipsTargetChannelWhenNoTargetPower() throws Exception {
     // Arrange
     DerEvent e = event(null, null, DerControlStatus.ACTIVE);

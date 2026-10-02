@@ -44,8 +44,13 @@ class MirrorCrossRepoIT extends AbstractBrokerIT {
       "public.ecr.aws/y1d2j6a8/mock-derms-dispatch-api:latest";
 
   private static final Network NETWORK = Network.newNetwork();
+  // Reason: the alias is the hostname mock-derms' own config resolves — its own broker, not the
+  // EMS one. A DERMS holds no credentials on the plant's broker, so this is plain hivemq-ce with
+  // no RBAC, matching what the deployed environment gives it.
   private static final GenericContainer<?> MOCK_DERMS_BROKER =
-      new GenericContainer<>("hivemq/hivemq-ce").withNetwork(NETWORK).withNetworkAliases("hivemq");
+      new GenericContainer<>("hivemq/hivemq-ce")
+          .withNetwork(NETWORK)
+          .withNetworkAliases("mock-derms-broker");
   private static GenericContainer<?> mockDermsDispatchApi;
 
   @BeforeAll
