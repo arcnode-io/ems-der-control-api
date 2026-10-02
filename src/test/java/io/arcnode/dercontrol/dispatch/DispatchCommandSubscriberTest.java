@@ -28,9 +28,9 @@ import tools.jackson.databind.json.JsonMapper;
 class DispatchCommandSubscriberTest {
 
   private static final String APPROVE_TOPIC =
-      "sites/site_001/devices/der_dispatch/commands/enable/event_active/none";
+      "sites/local_site/devices/der_dispatch/commands/enable/event_active/none";
   private static final String REJECT_TOPIC =
-      "sites/site_001/devices/der_dispatch/commands/disable/event_active/none";
+      "sites/local_site/devices/der_dispatch/commands/disable/event_active/none";
 
   private final Config config =
       new Config(
@@ -41,7 +41,7 @@ class DispatchCommandSubscriberTest {
           "localhost",
           "tcp://localhost:1883",
           "arcnode_der_control_api",
-          "site_001",
+          "local_site",
           "http://localhost:8081",
           "http://localhost:8080");
   private final JsonMapper mapper = JsonMapper.builder().build();

@@ -6,7 +6,7 @@ local:
   postgresHost: localhost
   mqttBrokerUrl: tcp://localhost:1883
   mqttUsername: arcnode_der_control_api
-  siteId: site_001
+  siteId: local_site
   # mock-derms-dispatch-api's own local default port — not a real utility, see its own readme.
   utilityMirrorUrl: http://localhost:8081
   # Where the utility should push DERControl Notifications. Goes out in this service's own
@@ -21,7 +21,7 @@ beta: &beta
   postgresHost: postgres
   mqttBrokerUrl: tcp://hivemq:1883
   mqttUsername: arcnode_der_control_api
-  siteId: arcnode_beta
+  siteId: beta_site
   # Placeholder. mock-derms-dispatch-api is a stand-in for an external utility and lives outside
   # this product's trust boundary (ems/readme.md's own diagram puts it in the mock_derms domain), so
   # it is not deployed alongside us. A real beta target is a real utility's endpoint, TBD.
@@ -35,4 +35,4 @@ beta: &beta
 # snake_case per ADR-002 §16 — the identifier regex allows no hyphens.
 device-demo:
   <<: *beta
-  siteId: demo_site
+  siteId: device_demo_site

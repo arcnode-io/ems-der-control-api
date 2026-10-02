@@ -28,7 +28,7 @@ class ConfigTest {
     assertThat(env.getProperty("app.e2e", Boolean.class)).isFalse();
     assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://localhost:1883");
     assertThat(env.getProperty("app.mqttUsername")).isEqualTo("arcnode_der_control_api");
-    assertThat(env.getProperty("app.siteId")).isEqualTo("site_001");
+    assertThat(env.getProperty("app.siteId")).isEqualTo("local_site");
   }
 
   @Test
@@ -70,7 +70,7 @@ class ConfigTest {
             "localhost",
             "tcp://localhost:1883",
             "u",
-            "site_001",
+            "local_site",
             "http://localhost:8081",
             "http://localhost:8080");
 
@@ -91,7 +91,7 @@ class ConfigTest {
     loader.postProcessEnvironment(env, new SpringApplication());
 
     // Assert
-    assertThat(env.getProperty("app.siteId")).isEqualTo("demo_site");
+    assertThat(env.getProperty("app.siteId")).isEqualTo("device_demo_site");
     assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://hivemq:1883");
     assertThat(env.getProperty("app.postgresHost")).isEqualTo("postgres");
     assertThat(env.getProperty("app.utilityMirrorUrl"))

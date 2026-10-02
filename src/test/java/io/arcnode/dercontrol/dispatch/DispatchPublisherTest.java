@@ -32,9 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
 class DispatchPublisherTest {
 
   private static final Instant FIXED = Instant.parse("2026-09-08T14:00:00Z");
-  private static final String BASE = "sites/site_001/devices/der_dispatch/measurements/";
+  private static final String BASE = "sites/local_site/devices/der_dispatch/measurements/";
   private static final String ENVELOPE_BASE =
-      "sites/site_001/devices/operating_envelope/measurements/";
+      "sites/local_site/devices/operating_envelope/measurements/";
 
   private final Config config =
       new Config(
@@ -45,7 +45,7 @@ class DispatchPublisherTest {
           "localhost",
           "tcp://localhost:1883",
           "arcnode_der_control_api",
-          "site_001",
+          "local_site",
           "http://localhost:8081",
           "http://localhost:8080");
   private final JsonMapper mapper = JsonMapper.builder().build();

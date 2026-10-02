@@ -27,7 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 class ActualActivePowerSubscriberTest {
 
   private static final String TOPIC =
-      "sites/site_001/devices/der_dispatch/measurements/actual_active_power/watts";
+      "sites/local_site/devices/der_dispatch/measurements/actual_active_power/watts";
 
   private final Config config =
       new Config(
@@ -38,7 +38,7 @@ class ActualActivePowerSubscriberTest {
           "localhost",
           "tcp://localhost:1883",
           "arcnode_der_control_api",
-          "site_001",
+          "local_site",
           "http://localhost:8081",
           "http://localhost:8080");
   private final JsonMapper mapper = JsonMapper.builder().build();

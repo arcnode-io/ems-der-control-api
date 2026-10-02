@@ -25,11 +25,11 @@ import tools.jackson.databind.json.JsonMapper;
 class DeliveryShortfallMonitorTest {
 
   private static final String TARGET_TOPIC =
-      "sites/site_001/devices/der_dispatch/measurements/target_active_power/watts";
+      "sites/local_site/devices/der_dispatch/measurements/target_active_power/watts";
   private static final String EVENT_ACTIVE_TOPIC =
-      "sites/site_001/devices/der_dispatch/measurements/event_active/none";
+      "sites/local_site/devices/der_dispatch/measurements/event_active/none";
   private static final String ACTUAL_TOPIC =
-      "sites/site_001/devices/der_dispatch/measurements/actual_active_power/watts";
+      "sites/local_site/devices/der_dispatch/measurements/actual_active_power/watts";
 
   private final Config config =
       new Config(
@@ -40,7 +40,7 @@ class DeliveryShortfallMonitorTest {
           "localhost",
           "tcp://localhost:1883",
           "arcnode_der_control_api",
-          "site_001",
+          "local_site",
           "http://localhost:8081",
           "http://localhost:8080");
   private final JsonMapper mapper = JsonMapper.builder().build();
