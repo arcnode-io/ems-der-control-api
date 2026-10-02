@@ -47,6 +47,13 @@ public final class DerControlNotificationParser {
       throw new IllegalArgumentException(
           "DERControl is missing a mandatory field (mRID, EventStatus or interval)");
     }
+    // Reason: mRID is HexBinary128, and JAXB leaves the byte array null rather than failing when
+    // the text isn't decodable — so a present-but-malformed mRID reaches here as a non-null
+    // element wrapping a null value, and hex-formatting it would NPE into a 500. The document is
+    // the utility's to fix, so it's a 400.
+    if (control.getMRID().getValue() == null) {
+      throw new IllegalArgumentException("DERControl mRID is not a valid HexBinary128 value");
+    }
     // Reason: the schema's UInt32 permits 0, but a zero-length control commands nothing and this
     // service would publish a setpoint no one can comply with.
     if (control.getInterval().getDuration() <= 0) {

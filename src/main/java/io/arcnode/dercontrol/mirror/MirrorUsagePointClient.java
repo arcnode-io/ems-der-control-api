@@ -9,11 +9,10 @@ import org.springframework.web.client.RestClient;
 
 /**
  * POSTs a real IEEE 2030.5 {@code MirrorUsagePoint} to the utility's own intake — the outbound side
- * of the compliance path. The
- * exact URI path ({@code /mirror-usage-points}) is NOT a spec-mandated value — real 2030.5 servers
- * publish their own resource URIs via {@code DeviceCapability} discovery, not a fixed path. This is
- * a POC-stage fixed contract between two services we both control, not a claim that this path is
- * itself part of the standard.
+ * of the compliance path. The exact URI path ({@code /mirror-usage-points}) is NOT a spec-mandated
+ * value — real 2030.5 servers publish their own resource URIs via {@code DeviceCapability}
+ * discovery, not a fixed path. This is a POC-stage fixed contract between two services we both
+ * control, not a claim that this path is itself part of the standard.
  */
 @Service
 public class MirrorUsagePointClient {

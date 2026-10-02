@@ -157,4 +157,30 @@ class DerControlNotificationParserTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mandatory");
   }
+
+  @Test
+  void rejectsAnMridThatIsNotHexBinary128() {
+    // Arrange: mRID is HexBinary128, so "...zz" is not a value JAXB can decode. The element is
+    // present, so a present-but-undecodable mRID is a distinct case from a missing one.
+    String badMrid =
+        """
+        <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
+        <subscribedResource>https://mock-derms.invalid/derp/1/derc</subscribedResource>\
+        <Resource xsi:type="DERControlList" all="1" results="1"\
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DERControl>\
+        <mRID>0123456789ABCDEF0123456789ABCDzz</mRID><creationTime>1790359200</creationTime>\
+        <EventStatus><currentStatus>1</currentStatus><dateTime>1790359200</dateTime>\
+        <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
+        <interval><duration>360</duration><start>1790359205</start></interval>\
+        </DERControl></Resource><status>0</status>\
+        <subscriptionURI>https://mock-derms.invalid/sub/1</subscriptionURI></Notification>\
+        """;
+
+    // Act / Assert: an IllegalArgumentException is what the controller turns into a 400. A
+    // NullPointerException would surface to the utility as a 500, blaming this service for
+    // their malformed document.
+    assertThatThrownBy(() -> DerControlNotificationParser.parse(badMrid))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mRID");
+  }
 }
