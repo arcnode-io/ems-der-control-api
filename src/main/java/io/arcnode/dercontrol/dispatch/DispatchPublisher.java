@@ -76,17 +76,18 @@ public class DispatchPublisher {
       // ended, and event_active alone doesn't undo a stale number. IDLE is a terminal utility
       // status, REJECTED is an operator refusal; neither commands anything.
       boolean released = state == DerEventState.IDLE || state == DerEventState.REJECTED;
-      // Reason: zero also covers an event that constrains without commanding. A
-      // line-constraint event carries an envelope and no opModTargetW, and this
-      // channel is a direct setpoint written straight through to the plant — so
-      // silence here would hand a consumer the previous event's setpoint to keep
-      // dispatching, which is real power, not a stale display value. Zero says
-      // "no direct setpoint in force"; the envelope does the constraining.
-      if (released || targetActivePowerW == null) {
-        send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, 0.0));
-      } else {
-        send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, targetActivePowerW));
-      }
+      // Reason: this channel is a direct setpoint written straight through to the plant and it
+      // is retained, so silence would hand a consumer the previous event's number to keep
+      // dispatching — real power, not a stale display value. Zero covers both an event that is
+      // over and one that constrains without commanding, since a line-constraint event carries
+      // an envelope and no opModTargetW.
+      boolean setpointInForce = !released && targetActivePowerW != null;
+      double commanded = setpointInForce ? targetActivePowerW : 0.0;
+      send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, commanded));
+      // Reason: zero is itself a legitimate full-curtailment setpoint, so the number alone
+      // cannot say whether anything is commanded. This says which of the two a zero is, for any
+      // consumer that would otherwise have to guess before writing it to a device.
+      send(DEVICE_ID, "target_setpoint_present", "none", new BooleanSample(ts, setpointInForce));
       send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
       send(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, state.name()));
       Boolean energize = event.getEnergize();
