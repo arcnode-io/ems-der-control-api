@@ -63,12 +63,17 @@ public class DispatchPublisher {
     String ts = clock.instant().toString();
     Instant now = clock.instant();
     DispatchMode mode = dispatchSettings.currentMode();
+    DerEventState state = event.derEventState(mode, now);
+    // Reason: a limit is what physically moves the plant — the battery's envelope guard follows
+    // import_limit, not event_active. So an event's limits may only reach the envelope while that
+    // event is actually in force. Publishing them from a PENDING event would let the plant act on
+    // a dispatch no operator has approved, which is the whole point of manual mode.
+    boolean inForce = state == DerEventState.ACTIVE;
 
     // Reason: the operating envelope is continuous, so reporting its arrival on der_dispatch would
     // leave event_active permanently true and der_event_state permanently ACTIVE — the HMI would
     // show a curtailment always in progress. An envelope constrains; it commands nothing.
     if (!event.isEnvelopeOnly()) {
-      DerEventState state = event.derEventState(mode, now);
       Double targetActivePowerW = event.getTargetActivePowerW();
       // Reason: target_active_power is retained, so an event that is over has to say so on the
       // channel itself. Leaving the last setpoint there tells any consumer that reads retained
@@ -97,11 +102,11 @@ public class DispatchPublisher {
     }
 
     Double importLimitW = event.getImportLimitW();
-    if (importLimitW != null) {
+    if (importLimitW != null && inForce) {
       send(ENVELOPE_DEVICE_ID, "import_limit", "watts", new FloatSample(ts, importLimitW));
     }
     Double exportLimitW = event.getExportLimitW();
-    if (exportLimitW != null) {
+    if (exportLimitW != null && inForce) {
       send(ENVELOPE_DEVICE_ID, "export_limit", "watts", new FloatSample(ts, exportLimitW));
     }
 
