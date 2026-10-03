@@ -61,17 +61,20 @@ class SubscriptionRegistrarIT extends AbstractBrokerIT {
   }
 
   @Test
-  void stopsOnceRegisteredRatherThanReRegisteringForever() {
+  void renewsOnEveryTickSoAUtilityRestartRecovers() {
     // Arrange
     wiremock.stubFor(post("/sub").willReturn(status(201)));
     registrar.register();
     wiremock.resetRequests();
 
-    // Act: the retry tick fires again
+    // Act: the renewal tick fires again
     registrar.register();
 
-    // Assert
-    assertThat(wiremock.findAll(postRequestedFor(urlEqualTo("/sub")))).isEmpty();
+    // Assert: the Subscription lives in the utility's own memory, so it has to be renewed rather
+    // than registered once. Registering once leaves this site orphaned the moment the utility
+    // restarts — it pushes nothing and nothing here notices, because a dispatch that is never
+    // delivered looks exactly like a utility with nothing to dispatch.
+    assertThat(wiremock.findAll(postRequestedFor(urlEqualTo("/sub")))).hasSize(1);
   }
 
   @Test

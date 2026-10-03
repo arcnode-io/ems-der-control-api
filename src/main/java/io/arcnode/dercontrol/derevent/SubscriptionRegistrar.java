@@ -20,6 +20,10 @@ import org.springframework.web.client.RestClient;
  *
  * <p>This is the client half of the subscription push: the utility never holds an address for this
  * service, it only knows the {@code notificationURI} named here.
+ *
+ * <p>The Subscription lives in the utility's own memory, so this renews it on every tick rather
+ * than registering once. A utility that restarts drops it, and nothing here can tell that happened
+ * — an undelivered dispatch looks exactly like a utility with nothing to dispatch.
  */
 @Component
 public class SubscriptionRegistrar {
@@ -28,7 +32,7 @@ public class SubscriptionRegistrar {
   private static final String SEP_XML = "application/sep+xml";
 
   private static final Logger LOG = LoggerFactory.getLogger(SubscriptionRegistrar.class);
-  private static final long RETRY_MILLIS = 30_000L;
+  private static final long RENEW_MILLIS = 30_000L;
   private static final String SUBSCRIPTION_PATH = "/sub";
 
   /** Where DERControl Notifications are delivered — this service's own ingest. */
@@ -55,7 +59,7 @@ public class SubscriptionRegistrar {
   private final RestClient client;
   private final String utilityBaseUrl;
   private final String publicBaseUrl;
-  private final AtomicBoolean registered = new AtomicBoolean();
+  private final AtomicBoolean subscribed = new AtomicBoolean();
 
   public SubscriptionRegistrar(RestClient.Builder builder, Config config) {
     // Reason: same HTTP/2-incapable pin as MirrorUsagePointClient, against the same host.
@@ -64,12 +68,9 @@ public class SubscriptionRegistrar {
     this.publicBaseUrl = config.publicBaseUrl();
   }
 
-  /** Attempts registration, then stops. Runs immediately at startup and retries until it lands. */
-  @Scheduled(fixedDelay = RETRY_MILLIS)
+  /** Registers, then renews on every tick. Runs immediately at startup and never stops. */
+  @Scheduled(fixedDelay = RENEW_MILLIS)
   public void register() {
-    if (registered.get()) {
-      return;
-    }
     try {
       client
           .post()
@@ -78,14 +79,16 @@ public class SubscriptionRegistrar {
           .body(Ieee20305Xml.marshal(subscription()))
           .retrieve()
           .toBodilessEntity();
-      registered.set(true);
-      if (LOG.isInfoEnabled()) {
+      // Reason: only log the transition into subscribed. This renews forever, so logging every
+      // successful tick would bury everything else.
+      if (subscribed.compareAndSet(false, true) && LOG.isInfoEnabled()) {
         LOG.info(
             "🔔 Subscribed to {} — the utility will push DERControl Notifications to {}",
             utilityBaseUrl + SUBSCRIBED_RESOURCE_PATH,
             publicBaseUrl + NOTIFICATION_PATH);
       }
     } catch (RuntimeException e) {
+      subscribed.set(false);
       if (LOG.isWarnEnabled()) {
         LOG.warn(
             "⚠️ Could not register a Subscription with {} ({}) — retrying. Until this lands the"
