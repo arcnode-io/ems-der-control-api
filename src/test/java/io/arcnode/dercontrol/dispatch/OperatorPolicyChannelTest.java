@@ -28,8 +28,8 @@ import tools.jackson.databind.json.JsonMapper;
  * because der-control-api terminates no auth of its own, and the broker already authenticates the
  * operator and already carries approve/reject.
  *
- * <p>{@code storage_authorized} is the operator choosing which resource answers an envelope, not
- * whether to obey one — the envelope binds regardless, and withholding the battery leaves the
+ * <p>{@code operator_reserve} is the operator choosing which resource answers an envelope, not
+ * whether to obey one — the envelope binds regardless, and energy held back from storage leaves the
  * compute shed to answer. Mocked broker, fixed clock, AAA.
  */
 @ExtendWith(MockitoExtension.class)
