@@ -87,9 +87,14 @@ class ActualActivePowerSubscriberTest {
 
     // Assert: guard() processes off the Paho thread on a background executor — poll rather than
     // assert synchronously, same reasoning as DlrRatingSubscriber's own async handoff.
-    long deadline = System.nanoTime() + Duration.ofSeconds(1).toNanos();
+    //
+    // Reason: sleep between polls rather than spin. Thread.onSpinWait burns this core for the
+    // whole budget, so on a loaded machine the waiter competes with the single-threaded executor
+    // it is waiting for and the test fails for lack of a scheduling slot rather than for any
+    // behaviour. Yielding makes the wait a function of the handoff, not of load.
+    long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
     while (subscriber.currentActiveWatts() == null && System.nanoTime() < deadline) {
-      Thread.onSpinWait();
+      Thread.sleep(10);
     }
     assertThat(subscriber.currentActiveWatts()).isEqualTo(612_500.0);
   }
