@@ -80,13 +80,13 @@ public class DispatchPublisher {
       // state — a gateway restarting, a new subscriber — to keep curtailing a dispatch the utility
       // ended, and event_active alone doesn't undo a stale number. IDLE is a terminal utility
       // status, REJECTED is an operator refusal; neither commands anything.
-      boolean released = state == DerEventState.IDLE || state == DerEventState.REJECTED;
       // Reason: this channel is a direct setpoint written straight through to the plant and it
       // is retained, so silence would hand a consumer the previous event's number to keep
-      // dispatching — real power, not a stale display value. Zero covers both an event that is
-      // over and one that constrains without commanding, since a line-constraint event carries
-      // an envelope and no opModTargetW.
-      boolean setpointInForce = !released && targetActivePowerW != null;
+      // dispatching — real power, not a stale display value. Zero covers every case where
+      // nothing is commanded: an event that is over, one awaiting an operator's decision, and
+      // one that constrains without commanding, since a line-constraint event carries an
+      // envelope and no opModTargetW.
+      boolean setpointInForce = inForce && targetActivePowerW != null;
       double commanded = setpointInForce ? targetActivePowerW : 0.0;
       send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, commanded));
       // Reason: zero is itself a legitimate full-curtailment setpoint, so the number alone
@@ -137,6 +137,20 @@ public class DispatchPublisher {
         "dispatch_overdelivery",
         "none",
         new BooleanSample(clock.instant().toString(), overdelivering));
+  }
+
+  /**
+   * Publish the site's dispatch policy. Retained, so a screen opened later knows the posture
+   * without asking, and so it survives a broker session being dropped.
+   *
+   * @param mode the policy now in effect
+   */
+  public void publishDispatchMode(DispatchMode mode) {
+    send(
+        DEVICE_ID,
+        "dispatch_mode",
+        "none",
+        new EnumSample(clock.instant().toString(), mode.name()));
   }
 
   /**

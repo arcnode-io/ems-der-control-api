@@ -22,10 +22,11 @@ class MqttReconnectHandlerTest {
   @Mock private DeliveryShortfallMonitor shortfallMonitor;
   @Mock private DispatchCommandSubscriber commandSubscriber;
   @Mock private ActualActivePowerSubscriber actualPowerSubscriber;
+  @Mock private DispatchModeSubscriber modeSubscriber;
 
   private MqttReconnectHandler handler() {
     return new MqttReconnectHandler(
-        mqtt, shortfallMonitor, commandSubscriber, actualPowerSubscriber);
+        mqtt, shortfallMonitor, commandSubscriber, actualPowerSubscriber, modeSubscriber);
   }
 
   @Test
@@ -41,6 +42,7 @@ class MqttReconnectHandlerTest {
     verify(shortfallMonitor).subscribe();
     verify(commandSubscriber).subscribe();
     verify(actualPowerSubscriber).subscribe();
+    verify(modeSubscriber).subscribe();
   }
 
   @Test
@@ -52,6 +54,7 @@ class MqttReconnectHandlerTest {
     verify(shortfallMonitor).subscribe();
     verify(commandSubscriber).subscribe();
     verify(actualPowerSubscriber).subscribe();
+    verify(modeSubscriber).subscribe();
   }
 
   @Test
@@ -79,6 +82,7 @@ class MqttReconnectHandlerTest {
     // Assert
     verify(commandSubscriber).subscribe();
     verify(actualPowerSubscriber).subscribe();
+    verify(modeSubscriber).subscribe();
   }
 
   @Test

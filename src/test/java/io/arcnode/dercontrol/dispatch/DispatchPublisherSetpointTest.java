@@ -55,7 +55,9 @@ class DispatchPublisherSetpointTest {
 
   @BeforeEach
   void defaultToAutoMode() {
-    given(dispatchSettings.currentMode()).willReturn(DispatchMode.AUTO);
+    org.mockito.Mockito.lenient()
+        .when(dispatchSettings.currentMode())
+        .thenReturn(DispatchMode.AUTO);
   }
 
   private DispatchPublisher publisher() {
@@ -91,6 +93,35 @@ class DispatchPublisherSetpointTest {
 
     // Act / Assert
     assertThat(publishedPresence(envelopeDriven)).isFalse();
+  }
+
+  @Test
+  void isFalseWhileAnOperatorHasNotDecidedYet() throws Exception {
+    // Arrange: manual mode with no decision is PENDING. A setpoint is written straight through to
+    // plant, so it must not leave here until someone has actually approved the dispatch.
+    given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
+    DerEvent awaitingApproval = event(-1_500_000.0, DerControlStatus.ACTIVE);
+
+    // Act / Assert
+    assertThat(publishedPresence(awaitingApproval)).isFalse();
+  }
+
+  @Test
+  void publishesZeroOnTheTargetChannelWhileAnOperatorHasNotDecidedYet() throws Exception {
+    // Arrange
+    given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
+
+    // Act
+    publisher().publish(event(-1_500_000.0, DerControlStatus.ACTIVE));
+
+    // Assert: zero, not the pending setpoint — the channel is retained and read straight through
+    verify(mqtt)
+        .publish(
+            eq("sites/local_site/devices/der_dispatch/measurements/target_active_power/watts"),
+            payload.capture(),
+            eq(0),
+            eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isEqualTo(0.0);
   }
 
   @Test
