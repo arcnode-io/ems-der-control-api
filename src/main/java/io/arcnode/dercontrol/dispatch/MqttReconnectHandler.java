@@ -27,8 +27,12 @@ import org.springframework.stereotype.Component;
  * <p>Confirmed against a real HiveMQ container restart: same client, same listener, publish after
  * the restart succeeds and the message is never delivered back.
  *
+ * <p>This is also the only thing that subscribes at startup: the subscribers expose {@code
+ * subscribe()} but do not listen for {@code ApplicationReadyEvent} themselves. One owner means one
+ * thread at a time can be inside {@code MqttClient.subscribe}.
+ *
  * <p>The subscribers are listed explicitly rather than collected through an interface, so what gets
- * re-established is readable in one place. A new subscriber has to be added here too.
+ * established is readable in one place. A new subscriber has to be added here, and nowhere else.
  */
 @Component
 public class MqttReconnectHandler implements MqttCallback {
@@ -61,6 +65,7 @@ public class MqttReconnectHandler implements MqttCallback {
   @EventListener(ApplicationReadyEvent.class)
   public void install() {
     mqtt.setCallback(this);
+    subscribeAll();
   }
 
   @Override
@@ -69,6 +74,20 @@ public class MqttReconnectHandler implements MqttCallback {
       return;
     }
     LOG.warn("🔌 Reconnected to {} — re-establishing subscriptions", serverUri);
+    subscribeAll();
+  }
+
+  /**
+   * Subscribe every subscriber, one caller at a time.
+   *
+   * <p>Reason for the lock: this runs on two threads. Startup calls it on the main thread, and
+   * {@code connectComplete} calls it on Paho's callback thread, so a broker flap during startup had
+   * both inside {@code MqttClient.subscribe} at once — which throws {@code
+   * ConcurrentModificationException} from inside Paho and fails the context *after* it has reported
+   * itself started. The container then sat in Docker's running state, serving nothing, with nothing
+   * to restart it.
+   */
+  private synchronized void subscribeAll() {
     resubscribe("delivery shortfall", shortfallMonitor::subscribe);
     resubscribe("dispatch commands", commandSubscriber::subscribe);
     resubscribe("actual active power", actualPowerSubscriber::subscribe);

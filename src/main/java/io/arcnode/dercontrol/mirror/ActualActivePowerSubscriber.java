@@ -14,8 +14,6 @@ import org.eclipse.paho.mqttv5.common.MqttSubscription;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -50,8 +48,7 @@ public class ActualActivePowerSubscriber {
     executor.awaitTermination(5, TimeUnit.SECONDS);
   }
 
-  /** Subscribes on application startup, after {@link io.arcnode.dercontrol.MqttConfig}. */
-  @EventListener(ApplicationReadyEvent.class)
+  /** Subscribes this consumer's topic. Called by MqttReconnectHandler, which owns when. */
   public void subscribe() throws org.eclipse.paho.mqttv5.common.MqttException {
     String topic = TOPIC.formatted(config.siteId());
 

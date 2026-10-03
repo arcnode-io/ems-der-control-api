@@ -29,6 +29,21 @@ class MqttReconnectHandlerTest {
   }
 
   @Test
+  void installSubscribesEverySubscriberItself() throws Exception {
+    // Act
+    handler().install();
+
+    // Assert: startup subscription runs through this one owner, not through each
+    // subscriber's own ApplicationReadyEvent listener. Two entry points meant the
+    // main thread and Paho's callback thread could both be inside
+    // MqttClient.subscribe at once, which throws ConcurrentModificationException
+    // from inside Paho and aborts the context after it has already started.
+    verify(shortfallMonitor).subscribe();
+    verify(commandSubscriber).subscribe();
+    verify(actualPowerSubscriber).subscribe();
+  }
+
+  @Test
   void resubscribesEverySubscriberAfterAReconnect() throws Exception {
     // Act
     handler().connectComplete(true, "tcp://broker:1883");
