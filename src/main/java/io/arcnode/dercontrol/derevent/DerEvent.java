@@ -229,6 +229,22 @@ public class DerEvent {
   }
 
   /**
+   * True when the utility has this control in force, taking no account of operator policy.
+   *
+   * <p>Distinct from {@link #isActive} on purpose. Some DERControl modes are mandatory: an
+   * operating envelope is the boundary a site must stay inside at all times and cannot decline, so
+   * no site-side policy — manual mode, an operator's refusal — may gate it. Those modes are
+   * published on this predicate. A setpoint asks a site to move power, which it may refuse, so that
+   * is published on {@link #isActive} instead.
+   *
+   * @param now wall-clock instant to compare against {@code interval.start}
+   * @return whether the utility's own status and schedule put this control in force
+   */
+  public boolean isMandatoryInForce(Instant now) {
+    return status == DerControlStatus.ACTIVE && !now.isBefore(intervalStart);
+  }
+
+  /**
    * True when this control carries only envelope modes — an import/export limit and no real-power
    * setpoint. DERControlBase modes are orthogonal, so which ones are present is what distinguishes
    * a standing operating envelope from a dispatch; CSIP-AUS adds no separate flag for it.

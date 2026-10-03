@@ -64,11 +64,12 @@ public class DispatchPublisher {
     Instant now = clock.instant();
     DispatchMode mode = dispatchSettings.currentMode();
     DerEventState state = event.derEventState(mode, now);
-    // Reason: a limit is what physically moves the plant — the battery's envelope guard follows
-    // import_limit, not event_active. So an event's limits may only reach the envelope while that
-    // event is actually in force. Publishing them from a PENDING event would let the plant act on
-    // a dispatch no operator has approved, which is the whole point of manual mode.
     boolean inForce = state == DerEventState.ACTIVE;
+    // Reason: a limit is mandatory and a setpoint is not, so they publish on different
+    // predicates. A site cannot decline the boundary it is given — withholding one pending an
+    // approval would be designed non-compliance — while asking a site to move power is a request
+    // it may refuse. What an operator actually decides is which resource answers the envelope.
+    boolean mandatoryInForce = event.isMandatoryInForce(now);
 
     // Reason: the operating envelope is continuous, so reporting its arrival on der_dispatch would
     // leave event_active permanently true and der_event_state permanently ACTIVE — the HMI would
@@ -102,11 +103,11 @@ public class DispatchPublisher {
     }
 
     Double importLimitW = event.getImportLimitW();
-    if (importLimitW != null && inForce) {
+    if (importLimitW != null && mandatoryInForce) {
       send(ENVELOPE_DEVICE_ID, "import_limit", "watts", new FloatSample(ts, importLimitW));
     }
     Double exportLimitW = event.getExportLimitW();
-    if (exportLimitW != null && inForce) {
+    if (exportLimitW != null && mandatoryInForce) {
       send(ENVELOPE_DEVICE_ID, "export_limit", "watts", new FloatSample(ts, exportLimitW));
     }
 

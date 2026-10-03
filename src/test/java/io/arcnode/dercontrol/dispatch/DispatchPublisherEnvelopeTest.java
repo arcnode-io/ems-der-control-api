@@ -24,10 +24,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Unit — an event's limits reach {@code operating_envelope} only while that event is in force. A
- * limit is what physically moves the battery, so publishing one from an event still awaiting an
- * operator's decision would let the plant act on a dispatch nobody approved. Mocked broker, fixed
- * clock, AAA.
+ * Unit — an event's limits reach {@code operating_envelope} whenever the utility has them in force,
+ * and only then.
+ *
+ * <p>Operator policy deliberately does not gate them: an operating envelope is the boundary a site
+ * must stay inside at all times and cannot decline, so withholding one pending an approval would be
+ * designed non-compliance. What an operator does get to decide is which resource answers the
+ * envelope — storage or compute — not whether to obey it. A setpoint is the opposite case and is
+ * gated, which {@code DispatchPublisherSetpointTest} covers. Mocked broker, fixed clock, AAA.
  */
 @ExtendWith(MockitoExtension.class)
 class DispatchPublisherEnvelopeTest {
@@ -67,15 +71,16 @@ class DispatchPublisherEnvelopeTest {
   }
 
   @Test
-  void withholdsTheLimitWhileAnOperatorHasNotDecided() throws Exception {
-    // Arrange: manual mode, nobody has approved yet, so this event is PENDING
+  void appliesTheLimitEvenWhileAnOperatorHasNotDecided() throws Exception {
+    // Arrange: manual mode with no decision yet, so the event is PENDING
     given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
 
     // Act
     publisher().publish(constraint(DerControlStatus.ACTIVE, null));
 
-    // Assert
-    verify(mqtt, never()).publish(eq(IMPORT_LIMIT), any(), anyInt(), anyBoolean());
+    // Assert: the boundary binds on arrival. Waiting for a click here would mean the site
+    // knowingly exceeded a limit the utility had already given it.
+    verify(mqtt).publish(eq(IMPORT_LIMIT), any(), anyInt(), anyBoolean());
   }
 
   @Test
@@ -103,14 +108,15 @@ class DispatchPublisherEnvelopeTest {
   }
 
   @Test
-  void withholdsTheLimitWhenTheOperatorRejected() throws Exception {
-    // Arrange
+  void appliesTheLimitEvenWhenTheOperatorRefused() throws Exception {
+    // Arrange: a refusal cannot reach a mandatory control. An operator refusing storage is a
+    // different decision, carried on its own channel, not an opt-out from the envelope.
     given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);
 
     // Act
     publisher().publish(constraint(DerControlStatus.ACTIVE, Boolean.FALSE));
 
     // Assert
-    verify(mqtt, never()).publish(eq(IMPORT_LIMIT), any(), anyInt(), anyBoolean());
+    verify(mqtt).publish(eq(IMPORT_LIMIT), any(), anyInt(), anyBoolean());
   }
 }
