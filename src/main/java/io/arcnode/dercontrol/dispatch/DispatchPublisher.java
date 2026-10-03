@@ -155,6 +155,21 @@ public class DispatchPublisher {
   }
 
   /**
+   * Publish the operator's energy reserve. Retained: the gateway subscribes unconditionally and
+   * treats an absent value as no reserve, so this has to be present and current rather than only
+   * sent on change.
+   *
+   * @param reserveWh watt-hours the operator is holding back from answering the envelope
+   */
+  public void publishOperatorReserve(double reserveWh) {
+    send(
+        DEVICE_ID,
+        "operator_reserve",
+        "watt_hours",
+        new FloatSample(clock.instant().toString(), reserveWh));
+  }
+
+  /**
    * Publish the operating envelope's feed health. The HMI's stale-feed alarm reads this channel,
    * and {@link EnvelopeFeedMonitor} decides when it changes.
    *

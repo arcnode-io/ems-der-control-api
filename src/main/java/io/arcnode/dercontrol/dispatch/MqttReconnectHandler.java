@@ -44,19 +44,19 @@ public class MqttReconnectHandler implements MqttCallback {
   private final DeliveryShortfallMonitor shortfallMonitor;
   private final DispatchCommandSubscriber commandSubscriber;
   private final ActualActivePowerSubscriber actualPowerSubscriber;
-  private final DispatchModeSubscriber modeSubscriber;
+  private final OperatorPolicySubscriber policySubscriber;
 
   public MqttReconnectHandler(
       MqttClient mqtt,
       DeliveryShortfallMonitor shortfallMonitor,
       DispatchCommandSubscriber commandSubscriber,
       ActualActivePowerSubscriber actualPowerSubscriber,
-      DispatchModeSubscriber modeSubscriber) {
+      OperatorPolicySubscriber policySubscriber) {
     this.mqtt = mqtt;
     this.shortfallMonitor = shortfallMonitor;
     this.commandSubscriber = commandSubscriber;
     this.actualPowerSubscriber = actualPowerSubscriber;
-    this.modeSubscriber = modeSubscriber;
+    this.policySubscriber = policySubscriber;
   }
 
   /**
@@ -94,7 +94,7 @@ public class MqttReconnectHandler implements MqttCallback {
     resubscribe("delivery shortfall", shortfallMonitor::subscribe);
     resubscribe("dispatch commands", commandSubscriber::subscribe);
     resubscribe("actual active power", actualPowerSubscriber::subscribe);
-    resubscribe("dispatch mode", modeSubscriber::subscribe);
+    resubscribe("operator policy", policySubscriber::subscribe);
   }
 
   /** One failure must not leave the remaining subscriptions unrestored. */

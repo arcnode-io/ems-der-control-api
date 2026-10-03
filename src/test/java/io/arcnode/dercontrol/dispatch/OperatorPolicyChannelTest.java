@@ -24,18 +24,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Unit — the {@code dispatch_mode} channel pair. The mode rides the broker rather than an HTTP PUT
+ * Unit — the operator-policy channel pairs. Both ride the broker rather than an HTTP endpoint
  * because der-control-api terminates no auth of its own, and the broker already authenticates the
- * operator and already carries approve/reject. Mocked broker, fixed clock, AAA.
+ * operator and already carries approve/reject.
+ *
+ * <p>{@code storage_authorized} is the operator choosing which resource answers an envelope, not
+ * whether to obey one — the envelope binds regardless, and withholding the battery leaves the
+ * compute shed to answer. Mocked broker, fixed clock, AAA.
  */
 @ExtendWith(MockitoExtension.class)
-class DispatchModeChannelTest {
+class OperatorPolicyChannelTest {
 
   private static final Instant FIXED = Instant.parse("2026-09-08T14:00:00Z");
   private static final String STATE =
       "sites/local_site/devices/der_dispatch/measurements/dispatch_mode/none";
   private static final String COMMAND =
       "sites/local_site/devices/der_dispatch/commands/set/dispatch_mode/none";
+  private static final String RESERVE_STATE =
+      "sites/local_site/devices/der_dispatch/measurements/operator_reserve/watt_hours";
+  private static final String RESERVE_COMMAND =
+      "sites/local_site/devices/der_dispatch/commands/set/operator_reserve/watt_hours";
 
   private final Config config =
       new Config(
@@ -62,8 +70,8 @@ class DispatchModeChannelTest {
         mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), settings);
   }
 
-  private DispatchModeSubscriber subscriber() {
-    return new DispatchModeSubscriber(mqtt, config, settings, mapper, publisher());
+  private OperatorPolicySubscriber subscriber() {
+    return new OperatorPolicySubscriber(mqtt, config, settings, mapper, publisher());
   }
 
   @Test
@@ -88,7 +96,7 @@ class DispatchModeChannelTest {
     verify(mqtt).subscribe(subscriptions.capture(), listeners.capture());
     assertThat(subscriptions.getValue())
         .extracting(MqttSubscription::getTopic)
-        .containsExactly(COMMAND);
+        .containsExactly(COMMAND, RESERVE_COMMAND);
     verify(mqtt).publish(eq(STATE), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asString()).isEqualTo("AUTO");
   }
@@ -107,5 +115,38 @@ class DispatchModeChannelTest {
 
     // Assert
     verify(settings, timeout(5000)).setMode(DispatchMode.MANUAL);
+  }
+
+  @Test
+  void theReserveIsStatedOnConnectSoTheGatewayNeverGuesses() throws Exception {
+    // Arrange
+    org.mockito.BDDMockito.given(settings.currentMode()).willReturn(DispatchMode.AUTO);
+    org.mockito.BDDMockito.given(settings.operatorReserveWh()).willReturn(0.0);
+
+    // Act
+    subscriber().subscribe();
+
+    // Assert: retained and restated every (re)connect — the gateway subscribes unconditionally
+    verify(mqtt).publish(eq(RESERVE_STATE), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isZero();
+  }
+
+  @Test
+  void anOperatorCanHoldEnergyBackAndSeeItEchoedBack() throws Exception {
+    // Arrange
+    org.mockito.BDDMockito.given(settings.currentMode()).willReturn(DispatchMode.AUTO);
+    org.mockito.BDDMockito.given(settings.operatorReserveWh()).willReturn(0.0);
+    org.mockito.BDDMockito.given(settings.setOperatorReserveWh(2_000_000.0))
+        .willReturn(2_000_000.0);
+    subscriber().subscribe();
+    verify(mqtt).subscribe(subscriptions.capture(), listeners.capture());
+
+    // Act: the second listener is the reserve command, in the order subscribed
+    listeners.getValue()[1].messageArrived(
+        RESERVE_COMMAND,
+        new MqttMessage("{\"ts\":\"2026-10-03T12:00:00Z\",\"value\":2000000}".getBytes()));
+
+    // Assert
+    verify(settings, timeout(5000)).setOperatorReserveWh(2_000_000.0);
   }
 }
