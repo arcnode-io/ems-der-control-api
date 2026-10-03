@@ -1,6 +1,7 @@
 package io.arcnode.dercontrol.derevent;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,4 +24,11 @@ public interface DerEventRepository extends JpaRepository<DerEvent, Long> {
    * for one).
    */
   Optional<DerEvent> findFirstByApprovedIsNullOrderByIntervalStartAsc();
+
+  /**
+   * Events whose utility status is not terminal — the candidates for governing {@code
+   * der_dispatch}. A closed event carries CANCELLED/SUPERSEDED/COMPLETED and drops out, which
+   * bounds this to the handful that are concurrently open rather than every event ever received.
+   */
+  List<DerEvent> findByStatusIn(Collection<DerControlStatus> statuses);
 }

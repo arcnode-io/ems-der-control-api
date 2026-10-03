@@ -350,4 +350,46 @@ class DerEventServiceTest {
     // Assert
     verify(envelopeFeedMonitor, never()).recordEnvelope(any());
   }
+
+  @Test
+  void closingOneEventLeavesTheSiteDispatchedWhileAnotherIsStillInForce() {
+    // Arrange: two overlapping curtailment events, both with an interval already open
+    DerEvent closing = withId(1, inForce("mrid-a", -1_000_000.0));
+    DerEvent stillInForce = withId(2, inForce("mrid-b", -900_000.0));
+    given(repository.findByMrid("mrid-a")).willReturn(Optional.of(closing));
+    given(repository.save(any(DerEvent.class))).willAnswer(call -> call.getArgument(0));
+    given(repository.findByStatusIn(any())).willReturn(List.of(stillInForce));
+
+    // Act: the utility closes A
+    service()
+        .ingest(
+            new DerControlRequest(
+                "mrid-a",
+                DerControlStatus.CANCELLED,
+                new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
+                new DerControlRequest.ControlBase(-1_000_000.0, true, null, null)),
+            RECEIVED_DOCUMENT,
+            TestCerts.HEADER_VALUE);
+
+    // Assert: der_dispatch is one set of site-level channels, not per-mRID, so closing A has to
+    // publish B — the event still in force. Publishing A's terminal state would write "released"
+    // and a zero setpoint straight through to plant while B is still commanding one.
+    ArgumentCaptor<DerEvent> published = ArgumentCaptor.forClass(DerEvent.class);
+    verify(publisher).publish(published.capture());
+    assertThat(published.getValue().getMrid()).isEqualTo("mrid-b");
+  }
+
+  private static DerEvent inForce(String mrid, double targetW) {
+    return new DerEvent(
+        mrid,
+        DerControlStatus.ACTIVE,
+        NOW.minusSeconds(60),
+        3600L,
+        targetW,
+        true,
+        null,
+        null,
+        RECEIVED_DOCUMENT,
+        TestCerts.LFDI);
+  }
 }

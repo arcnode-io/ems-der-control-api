@@ -7,6 +7,7 @@ import io.arcnode.dercontrol.dispatch.DispatchPublisher;
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -23,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class DerEventService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DerEventService.class);
+
+  /** Utility statuses that are not terminal — a closed event drops out of der_dispatch's field. */
+  private static final List<DerControlStatus> OPEN_STATUSES =
+      List.of(DerControlStatus.SCHEDULED, DerControlStatus.ACTIVE);
 
   private final DerEventRepository repository;
   private final DispatchPublisher publisher;
@@ -72,7 +77,7 @@ public class DerEventService {
           saved.getTargetActivePowerW(),
           saved.getEnergize());
     }
-    publisher.publish(saved);
+    publishGoverning(saved);
     // Reason: only the envelope schedule says anything about whether the envelope is still
     // arriving.
     // The envelope carries the interval it is valid for, so the monitor needs no cadence constant.
@@ -97,8 +102,32 @@ public class DerEventService {
   private void armFutureRepublish(DerEvent event) {
     Instant start = event.getIntervalStart();
     if (start.isAfter(clock.instant())) {
-      scheduler.schedule(() -> publisher.publish(event), start);
+      scheduler.schedule(() -> publishGoverning(event), start);
     }
+  }
+
+  /**
+   * Publishes whichever event {@code der_dispatch} should reflect right now, not the one that
+   * happened to change. An envelope refresh carries only limits and never touches der_dispatch, so
+   * it publishes itself.
+   */
+  private void publishGoverning(DerEvent changed) {
+    publisher.publish(changed.isEnvelopeOnly() ? changed : governing(changed));
+  }
+
+  /**
+   * The curtailment governing the site. {@code der_dispatch} is site-level, not a channel per mRID,
+   * so closing one event must not release the site while another is still in force — those channels
+   * carry a setpoint written straight through to plant. Most recently received still-open
+   * curtailment wins, since 2030.5 supersession is a later event replacing an earlier one.
+   *
+   * @param changed the event that just changed — the answer when nothing else is still open
+   */
+  private DerEvent governing(DerEvent changed) {
+    return repository.findByStatusIn(OPEN_STATUSES).stream()
+        .filter(candidate -> !candidate.isEnvelopeOnly())
+        .max(Comparator.comparing(DerEvent::getReceivedAt))
+        .orElse(changed);
   }
 
   /**
@@ -130,7 +159,7 @@ public class DerEventService {
         event -> {
           event.setApproved(approved);
           DerEvent saved = repository.save(event);
-          publisher.publish(saved);
+          publishGoverning(saved);
         });
   }
 
