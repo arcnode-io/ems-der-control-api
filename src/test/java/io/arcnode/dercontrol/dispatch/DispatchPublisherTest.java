@@ -174,15 +174,36 @@ class DispatchPublisherTest {
   }
 
   @Test
-  void skipsTargetChannelWhenNoTargetPower() throws Exception {
-    // Arrange
-    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
+  void publishesZeroTargetWhenAnActiveEventCommandsNoSetpoint() throws Exception {
+    // Arrange: a line-constraint event. The utility constrains with an envelope and
+    // commands no direct setpoint, so DERControlBase carries no opModTargetW.
+    DerEvent e = event(null, true, DerControlStatus.ACTIVE);
 
     // Act
     publisher().publish(e);
 
-    // Assert
+    // Assert: 0, not silence. The channel is retained, so leaving it unwritten
+    // hands any consumer the previous event's setpoint to dispatch against —
+    // and a setpoint written straight to the battery becomes real power.
+    verify(mqtt)
+        .publish(eq(BASE + "target_active_power/watts"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isZero();
+  }
+
+  @Test
+  void leavesDerDispatchAloneForAnEnvelopeOnlyEvent() throws Exception {
+    // Arrange: limits and nothing else — the standing operating envelope, which
+    // constrains continuously and commands nothing.
+    DerEvent e = event(null, null, 1_912_200.0, 0.0, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert: der_dispatch is the direct-dispatch device, so an envelope must not
+    // write to it at all — reporting an envelope there would leave event_active
+    // permanently true and show a curtailment always in progress.
     verify(mqtt, never()).publish(startsWith(BASE + "target_active_power"), any(), eq(0), eq(true));
+    verify(mqtt, never()).publish(startsWith(BASE + "event_active"), any(), eq(0), eq(true));
   }
 
   @Test
