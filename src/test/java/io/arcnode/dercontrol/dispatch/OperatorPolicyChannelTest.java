@@ -1,6 +1,9 @@
 package io.arcnode.dercontrol.dispatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -11,6 +14,7 @@ import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.paho.mqttv5.client.IMqttMessageListener;
 import org.eclipse.paho.mqttv5.client.MqttClient;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
@@ -97,8 +101,34 @@ class OperatorPolicyChannelTest {
     assertThat(subscriptions.getValue())
         .extracting(MqttSubscription::getTopic)
         .containsExactly(COMMAND, RESERVE_COMMAND);
-    verify(mqtt).publish(eq(STATE), payload.capture(), eq(0), eq(true));
+    verify(mqtt, timeout(5000)).publish(eq(STATE), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asString()).isEqualTo("AUTO");
+  }
+
+  @Test
+  void republishesOffTheCallingThreadBecauseAPublishOnPahosCallbackThreadDeadlocks()
+      throws Exception {
+    // Arrange: MqttReconnectHandler calls subscribe() from connectComplete, which runs on Paho's
+    // own callback thread. MqttClient.publish blocks until the broker's ack is processed, and the
+    // thread that would process it is the one blocked — so an inline republish never returns and
+    // the reconnect never finishes.
+    org.mockito.BDDMockito.given(settings.currentMode()).willReturn(DispatchMode.AUTO);
+    Thread caller = Thread.currentThread();
+    AtomicReference<Thread> publishedOn = new AtomicReference<>();
+    org.mockito.BDDMockito.willAnswer(
+            invocation -> {
+              publishedOn.set(Thread.currentThread());
+              return null;
+            })
+        .given(mqtt)
+        .publish(eq(STATE), any(), anyInt(), anyBoolean());
+
+    // Act
+    subscriber().subscribe();
+
+    // Assert
+    verify(mqtt, timeout(5000)).publish(eq(STATE), any(), anyInt(), anyBoolean());
+    assertThat(publishedOn.get()).isNotSameAs(caller);
   }
 
   @Test
@@ -127,7 +157,7 @@ class OperatorPolicyChannelTest {
     subscriber().subscribe();
 
     // Assert: retained and restated every (re)connect — the gateway subscribes unconditionally
-    verify(mqtt).publish(eq(RESERVE_STATE), payload.capture(), eq(0), eq(true));
+    verify(mqtt, timeout(5000)).publish(eq(RESERVE_STATE), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asDouble()).isZero();
   }
 

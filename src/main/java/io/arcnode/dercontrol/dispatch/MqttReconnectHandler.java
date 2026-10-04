@@ -97,12 +97,20 @@ public class MqttReconnectHandler implements MqttCallback {
     resubscribe("operator policy", policySubscriber::subscribe);
   }
 
-  /** One failure must not leave the remaining subscriptions unrestored. */
+  /**
+   * One failure must not leave the remaining subscriptions unrestored.
+   *
+   * <p>Catches {@code Exception} rather than {@code MqttException}: subscribing also restates
+   * retained state, and a failed publish surfaces as an unchecked {@code IllegalStateException}.
+   * Anything escaping here runs on Paho's callback thread, where it kills the thread that drives
+   * reconnect — so one subscriber's bad luck would cost every subscription and every future
+   * recovery, not just its own.
+   */
   private void resubscribe(String what, Resubscribe action) {
     try {
       action.run();
       LOG.info("🔌 Resubscribed: {}", what);
-    } catch (MqttException e) {
+    } catch (Exception e) {
       LOG.error("🔌 Could not resubscribe {} — this service is deaf on it until restart", what, e);
     }
   }

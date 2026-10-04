@@ -86,6 +86,26 @@ class MqttReconnectHandlerTest {
   }
 
   @Test
+  void anUncheckedResubscribeFailureDoesNotStopTheRest() throws Exception {
+    // Arrange: OperatorPolicySubscriber.subscribe ends by publishing the current mode and
+    // reserve, and DispatchPublisher wraps a failed publish in IllegalStateException. Unchecked,
+    // so catching only MqttException lets it escape subscribeAll — the later subscribers never
+    // run, and on Paho's callback thread it kills the thread that drives reconnect, so the next
+    // keepalive timeout never recovers.
+    org.mockito.BDDMockito.willThrow(new IllegalStateException("failed to publish"))
+        .given(shortfallMonitor)
+        .subscribe();
+
+    // Act
+    handler().connectComplete(true, "tcp://broker:1883");
+
+    // Assert
+    verify(commandSubscriber).subscribe();
+    verify(actualPowerSubscriber).subscribe();
+    verify(policySubscriber).subscribe();
+  }
+
+  @Test
   void installItselfAsTheClientsCallback() {
     // Arrange: an @EventListener method's only parameter is the event, so taking the client as an
     // argument here would silently never run and nothing would ever be resubscribed

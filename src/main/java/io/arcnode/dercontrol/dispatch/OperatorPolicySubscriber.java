@@ -70,7 +70,7 @@ public class OperatorPolicySubscriber {
   }
 
   /**
-   * Subscribes the command topic and republishes the current mode.
+   * Subscribes the command topics and restates the retained mode and reserve.
    *
    * <p>The republish is here rather than only on change because the retained value is the only way
    * a screen learns the posture, and a broker that dropped its session dropped that too — so every
@@ -88,8 +88,28 @@ public class OperatorPolicySubscriber {
         new IMqttMessageListener[] {
           (topic, message) -> applyMode(message), (topic, message) -> applyReserve(message)
         });
-    publisher.publishDispatchMode(settings.currentMode());
-    publisher.publishOperatorReserve(settings.operatorReserveWh());
+    restatePosture();
+  }
+
+  /**
+   * Restates the retained mode and reserve off the calling thread.
+   *
+   * <p>Reason for the executor: {@link MqttReconnectHandler} calls {@code subscribe()} from {@code
+   * connectComplete}, which runs on Paho's callback thread, and {@code MqttClient.publish} blocks
+   * until the broker's ack is processed by that very thread. Publishing inline deadlocks the
+   * reconnect — the subscription lands, nothing after it ever runs, and the connection is never
+   * recovered. Same executor and same reason as the command handlers.
+   */
+  private void restatePosture() {
+    executor.submit(
+        () -> {
+          try {
+            publisher.publishDispatchMode(settings.currentMode());
+            publisher.publishOperatorReserve(settings.operatorReserveWh());
+          } catch (RuntimeException e) {
+            LOG.error("failed to restate operator policy on the bus", e);
+          }
+        });
   }
 
   /**
