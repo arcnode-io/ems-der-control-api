@@ -86,17 +86,19 @@ public class DerEventService {
           saved.getIntervalStart().plusSeconds(saved.getDurationSeconds()));
     }
     armFutureRepublish(saved);
+    armRelease(saved);
     return DerEventResponse.from(saved);
   }
 
   /**
-   * Re-arms every persisted event whose {@code interval.start} hasn't opened yet. Spring's {@code
-   * TaskScheduler} is in-memory only — a restart between {@link #ingest} arming a republish and
-   * that interval actually opening loses the scheduled task entirely, so this recovers it on boot.
+   * Re-arms every persisted event whose {@code interval.start} hasn't opened yet, and the release
+   * of every still-open event whose interval hasn't ended yet. Spring's {@code TaskScheduler} is
+   * in-memory only — a restart loses both scheduled tasks entirely, so this recovers them on boot.
    */
   @EventListener(ApplicationReadyEvent.class)
   public void rearmFutureEvents() {
     repository.findByIntervalStartAfter(clock.instant()).forEach(this::armFutureRepublish);
+    repository.findByStatusIn(OPEN_STATUSES).forEach(this::armRelease);
   }
 
   /**
@@ -118,6 +120,26 @@ public class DerEventService {
     Instant start = event.getIntervalStart();
     if (start.isAfter(clock.instant())) {
       scheduler.schedule(() -> publishGoverning(event), start);
+    }
+  }
+
+  /**
+   * Publishes again the moment this event's interval ends.
+   *
+   * <p>Reason: the interval is the authority on when an event is over, and der_dispatch is
+   * retained. Without this, nothing republishes at the end and the last setpoint stands — a
+   * consumer keeps executing an expired dispatch until the utility happens to send a terminal
+   * status. A DERMS that crashes or partitions would leave storage discharging to its floor.
+   * Confirmed live before fixing: 24s past a 120s event's end, the pack was still at the commanded
+   * 1.12 MW on a retained event_active stamped at dispatch time.
+   *
+   * <p>Needs no release-specific publish: {@code derEventState(mode, now)} already resolves an
+   * expired event to IDLE, so the ordinary publish path states the released posture by itself.
+   */
+  private void armRelease(DerEvent event) {
+    Instant end = event.getIntervalStart().plusSeconds(event.getDurationSeconds());
+    if (end.isAfter(clock.instant())) {
+      scheduler.schedule(() -> publishGoverning(event), end);
     }
   }
 

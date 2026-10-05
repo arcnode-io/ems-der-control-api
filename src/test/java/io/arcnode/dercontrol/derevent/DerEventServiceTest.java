@@ -193,9 +193,12 @@ class DerEventServiceTest {
     // Act
     service().ingest(openRequest, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
 
-    // Assert: still publishes once, but nothing left to arm
+    // Assert: still publishes once, and arms no republish at a start that has already passed.
+    // The release at interval end is armed regardless and is asserted separately — an event
+    // already underway is exactly the case that still needs releasing.
     verify(publisher, times(1)).publish(any(DerEvent.class));
-    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+    verify(scheduler, never()).schedule(any(Runnable.class), eq(NOW.minusSeconds(60)));
+    verify(scheduler).schedule(any(Runnable.class), eq(NOW.plusSeconds(3540)));
   }
 
   @Test
@@ -223,6 +226,52 @@ class DerEventServiceTest {
 
     // Assert
     verify(scheduler).schedule(any(Runnable.class), eq(START));
+  }
+
+  @Test
+  void armsAReleaseAtTheEndOfAnIngestedEventsInterval() {
+    // Arrange: an event in force now, ending an hour out
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    DerEvent saved = withId(1, event("mrid-1", null));
+    given(repository.save(any(DerEvent.class))).willReturn(saved);
+
+    // Act
+    service()
+        .ingest(
+            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
+
+    // Assert: scheduled for interval end, not just interval start. Without this the plant keeps
+    // executing an expired setpoint until the utility happens to send a terminal status — a DERMS
+    // that crashes or partitions leaves storage discharging to its floor.
+    verify(scheduler).schedule(any(Runnable.class), eq(START.plusSeconds(3600)));
+  }
+
+  @Test
+  void rearmsTheReleaseOfAnEventAlreadyUnderwayOnBoot() {
+    // Arrange: a restart mid-event. The scheduler is in-memory, so the release armed at ingest
+    // died with the process — and the event's own interval is the only thing that still knows
+    // when it ends.
+    DerEvent underway =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1",
+                DerControlStatus.ACTIVE,
+                NOW.minusSeconds(60),
+                3600L,
+                -1_000_000.0,
+                true,
+                null,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1"));
+    given(repository.findByStatusIn(any())).willReturn(List.of(underway));
+
+    // Act
+    service().rearmFutureEvents();
+
+    // Assert
+    verify(scheduler).schedule(any(Runnable.class), eq(NOW.plusSeconds(3540)));
   }
 
   @Test
