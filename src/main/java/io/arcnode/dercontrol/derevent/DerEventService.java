@@ -99,6 +99,21 @@ public class DerEventService {
     repository.findByIntervalStartAfter(clock.instant()).forEach(this::armFutureRepublish);
   }
 
+  /**
+   * States what {@code der_dispatch} should reflect right now, with no event having changed.
+   *
+   * <p>Called whenever this service's retained state may be gone: its own boot, and a broker
+   * restart, which drops every retained message while this process stays up none the wiser.
+   *
+   * <p>Reason for consulting the store rather than simply declaring the site idle: a restart in the
+   * middle of a curtailment would otherwise publish event_active false, which tells a consumer
+   * gating on it that the plant is free — on the charge path, importing power during the very event
+   * that asked the site to back off.
+   */
+  public void statePosture() {
+    openGoverning().ifPresentOrElse(publisher::publish, publisher::publishIdlePosture);
+  }
+
   private void armFutureRepublish(DerEvent event) {
     Instant start = event.getIntervalStart();
     if (start.isAfter(clock.instant())) {
@@ -124,10 +139,14 @@ public class DerEventService {
    * @param changed the event that just changed — the answer when nothing else is still open
    */
   private DerEvent governing(DerEvent changed) {
+    return openGoverning().orElse(changed);
+  }
+
+  /** The still-open curtailment in force, or empty when the site is uncommanded. */
+  private Optional<DerEvent> openGoverning() {
     return repository.findByStatusIn(OPEN_STATUSES).stream()
         .filter(candidate -> !candidate.isEnvelopeOnly())
-        .max(Comparator.comparing(DerEvent::getReceivedAt))
-        .orElse(changed);
+        .max(Comparator.comparing(DerEvent::getReceivedAt));
   }
 
   /**

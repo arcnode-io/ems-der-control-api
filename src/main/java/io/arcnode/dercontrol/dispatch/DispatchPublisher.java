@@ -58,6 +58,23 @@ public class DispatchPublisher {
     this.dispatchSettings = dispatchSettings;
   }
 
+  /**
+   * States the uncommanded posture: no event, no setpoint. For a site whose retained state a
+   * consumer cannot otherwise distinguish from a site mid-curtailment.
+   */
+  public void publishIdlePosture() {
+    String ts = clock.instant().toString();
+    // Reason: these four are retained and are published together by publish(), so a site that has
+    // never been curtailed has none of them. A consumer then cannot tell "no event" from "an event
+    // whose state I have not heard yet", and one that gates real power on event_active has to
+    // assume the unsafe case and do nothing. Zero with target_setpoint_present false says nothing
+    // is commanded, rather than commanding zero.
+    send(DEVICE_ID, "target_active_power", "watts", new FloatSample(ts, 0.0));
+    send(DEVICE_ID, "target_setpoint_present", "none", new BooleanSample(ts, false));
+    send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, false));
+    send(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, DerEventState.IDLE.name()));
+  }
+
   /** Publish the setpoint + status + envelope channels for one event. */
   public void publish(DerEvent event) {
     String ts = clock.instant().toString();

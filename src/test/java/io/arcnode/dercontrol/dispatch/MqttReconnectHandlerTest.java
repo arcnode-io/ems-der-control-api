@@ -3,6 +3,7 @@ package io.arcnode.dercontrol.dispatch;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.arcnode.dercontrol.derevent.DerEventService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,10 +24,16 @@ class MqttReconnectHandlerTest {
   @Mock private DispatchCommandSubscriber commandSubscriber;
   @Mock private ActualActivePowerSubscriber actualPowerSubscriber;
   @Mock private OperatorPolicySubscriber policySubscriber;
+  @Mock private DerEventService derEventService;
 
   private MqttReconnectHandler handler() {
     return new MqttReconnectHandler(
-        mqtt, shortfallMonitor, commandSubscriber, actualPowerSubscriber, policySubscriber);
+        mqtt,
+        shortfallMonitor,
+        commandSubscriber,
+        actualPowerSubscriber,
+        policySubscriber,
+        derEventService);
   }
 
   @Test
@@ -55,6 +62,17 @@ class MqttReconnectHandlerTest {
     verify(commandSubscriber).subscribe();
     verify(actualPowerSubscriber).subscribe();
     verify(policySubscriber).subscribe();
+  }
+
+  @Test
+  void restatesDerDispatchAfterAReconnect() throws Exception {
+    // Act
+    handler().connectComplete(true, "tcp://broker:1883");
+
+    // Assert: a broker restart drops every retained message while this process stays up, so
+    // re-establishing only the subscriptions leaves der_dispatch silent — and a consumer that
+    // gates real power on event_active stays dark until the next event happens to arrive.
+    verify(derEventService).statePosture();
   }
 
   @Test

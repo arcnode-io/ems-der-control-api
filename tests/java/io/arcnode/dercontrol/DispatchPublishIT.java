@@ -89,11 +89,14 @@ class DispatchPublishIT extends AbstractBrokerIT {
         .expectStatus()
         .isCreated();
 
-    // Assert: the exact channel + payload the utility's setpoint should land on
+    // Assert: the exact channel + payload the utility's setpoint should land on. Awaited by value
+    // rather than by first arrival, because this channel is retained and carries the idle posture
+    // until a dispatch replaces it — a subscriber legitimately sees that zero first.
     ReceivedSample sample =
         awaitTopic(
             "sites/%s/devices/der_dispatch/measurements/target_active_power/watts"
-                .formatted(config.siteId()));
+                .formatted(config.siteId()),
+            "\"value\":-1500000.0");
     assertThat(sample.payload()).contains("\"value\":-1500000.0");
   }
 
@@ -132,16 +135,28 @@ class DispatchPublishIT extends AbstractBrokerIT {
    * Drains the queue until the wanted topic shows up or the budget runs out — bounded, no sleep.
    */
   private ReceivedSample awaitTopic(String topic) throws InterruptedException {
+    return awaitTopic(topic, "");
+  }
+
+  /**
+   * Drains the queue until a sample on {@code topic} whose payload contains {@code wanted} shows
+   * up, or the budget runs out — bounded, no sleep.
+   *
+   * <p>Reason this exists: der_dispatch's channels are retained, and this service states its idle
+   * posture whenever it connects, so the first sample a subscriber sees on one of them is that
+   * posture rather than any dispatch. Taking the first message would assert against the wrong one.
+   */
+  private ReceivedSample awaitTopic(String topic, String wanted) throws InterruptedException {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
     while (System.nanoTime() < deadline) {
       ReceivedSample sample = received.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
       if (sample == null) {
         break;
       }
-      if (sample.topic().equals(topic)) {
+      if (sample.topic().equals(topic) && sample.payload().contains(wanted)) {
         return sample;
       }
     }
-    throw new AssertionError("no message on " + topic + " within 10s");
+    throw new AssertionError("no message on " + topic + " containing " + wanted + " within 10s");
   }
 }

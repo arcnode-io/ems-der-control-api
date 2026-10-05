@@ -226,6 +226,48 @@ class DerEventServiceTest {
   }
 
   @Test
+  void statesTheIdlePostureOnBootWhenNothingIsInForce() {
+    // Arrange: a site that has never been curtailed. Nothing is persisted, and the broker's
+    // retained state went with its container, so no consumer can know the site is uncommanded
+    // unless this says so.
+    given(repository.findByStatusIn(any())).willReturn(List.of());
+
+    // Act
+    service().statePosture();
+
+    // Assert
+    verify(publisher).publishIdlePosture();
+  }
+
+  @Test
+  void republishesAnInForceEventOnBootRatherThanClaimingIdle() {
+    // Arrange: the process restarted mid-curtailment. Publishing the idle posture here would tell
+    // every consumer the plant is free, which on the charge path means importing during an event.
+    DerEvent inForce =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1",
+                DerControlStatus.ACTIVE,
+                NOW.minusSeconds(60),
+                3600L,
+                -1_000_000.0,
+                true,
+                null,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1"));
+    given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
+
+    // Act
+    service().statePosture();
+
+    // Assert
+    verify(publisher).publish(inForce);
+    verify(publisher, never()).publishIdlePosture();
+  }
+
+  @Test
   void approveCurrentPendingByMridTargetsThatExactEvent() {
     // Arrange: two events pending at once — mrid disambiguates which one
     DerEvent target = withId(1, event("mrid-1", null));

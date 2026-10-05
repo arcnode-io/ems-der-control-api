@@ -1,5 +1,6 @@
 package io.arcnode.dercontrol.dispatch;
 
+import io.arcnode.dercontrol.derevent.DerEventService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
 import org.eclipse.paho.mqttv5.client.IMqttToken;
 import org.eclipse.paho.mqttv5.client.MqttCallback;
@@ -33,6 +34,9 @@ import org.springframework.stereotype.Component;
  *
  * <p>The subscribers are listed explicitly rather than collected through an interface, so what gets
  * established is readable in one place. A new subscriber has to be added here, and nowhere else.
+ *
+ * <p>It also restates this service's retained measurements, for the same reason: a broker restart
+ * drops them, and nothing else notices.
  */
 @Component
 public class MqttReconnectHandler implements MqttCallback {
@@ -45,18 +49,21 @@ public class MqttReconnectHandler implements MqttCallback {
   private final DispatchCommandSubscriber commandSubscriber;
   private final ActualActivePowerSubscriber actualPowerSubscriber;
   private final OperatorPolicySubscriber policySubscriber;
+  private final DerEventService derEventService;
 
   public MqttReconnectHandler(
       MqttClient mqtt,
       DeliveryShortfallMonitor shortfallMonitor,
       DispatchCommandSubscriber commandSubscriber,
       ActualActivePowerSubscriber actualPowerSubscriber,
-      OperatorPolicySubscriber policySubscriber) {
+      OperatorPolicySubscriber policySubscriber,
+      DerEventService derEventService) {
     this.mqtt = mqtt;
     this.shortfallMonitor = shortfallMonitor;
     this.commandSubscriber = commandSubscriber;
     this.actualPowerSubscriber = actualPowerSubscriber;
     this.policySubscriber = policySubscriber;
+    this.derEventService = derEventService;
   }
 
   /**
@@ -95,6 +102,10 @@ public class MqttReconnectHandler implements MqttCallback {
     resubscribe("dispatch commands", commandSubscriber::subscribe);
     resubscribe("actual active power", actualPowerSubscriber::subscribe);
     resubscribe("operator policy", policySubscriber::subscribe);
+    // Reason: restating der_dispatch belongs here and not on ApplicationReadyEvent, because a
+    // broker restart drops every retained message while this process stays up and never notices.
+    // Boot is only one of the two ways this service's retained state goes missing.
+    resubscribe("der_dispatch posture", derEventService::statePosture);
   }
 
   /**
