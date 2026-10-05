@@ -275,6 +275,68 @@ class DerEventServiceTest {
   }
 
   @Test
+  void releasesFromTheStoreRatherThanTheEventItWasArmedWith() {
+    // Arrange: an event in force, armed for release at its interval end
+    DerEvent inForce =
+        withId(
+            1,
+            new DerEvent(
+                "mrid-1",
+                DerControlStatus.ACTIVE,
+                NOW.minusSeconds(60),
+                3600L,
+                -1_000_000.0,
+                true,
+                null,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1"));
+    given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
+    service().rearmFutureEvents();
+    ArgumentCaptor<Runnable> armed = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduler).schedule(armed.capture(), any(Instant.class));
+    // the utility closed it early, so by the time the release fires nothing is open
+    given(repository.findByStatusIn(any())).willReturn(List.of());
+
+    // Act
+    armed.getValue().run();
+
+    // Assert: the posture comes from the store at fire time. Holding the entity would republish
+    // the status it had when armed — re-asserting a curtailment the utility already ended, which
+    // is worse than never releasing at all.
+    verify(publisher).publishIdlePosture();
+    verify(publisher, never()).publish(inForce);
+  }
+
+  @Test
+  void armsNoReleaseForAnEnvelopeOnlyEvent() {
+    // Arrange: the operating envelope re-POSTs continuously under one mRID with a fresh short
+    // interval each time
+    DerEvent envelope =
+        withId(
+            1,
+            new DerEvent(
+                "env-1",
+                DerControlStatus.ACTIVE,
+                NOW,
+                10L,
+                null,
+                null,
+                5_000_000.0,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1"));
+    given(repository.findByStatusIn(any())).willReturn(List.of(envelope));
+
+    // Act
+    service().rearmFutureEvents();
+
+    // Assert: an envelope never publishes der_dispatch, so it has nothing to release — and arming
+    // one per re-POST would queue a task every few seconds for the life of the process.
+    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+  }
+
+  @Test
   void statesTheIdlePostureOnBootWhenNothingIsInForce() {
     // Arrange: a site that has never been curtailed. Nothing is persisted, and the broker's
     // retained state went with its container, so no consumer can know the site is uncommanded

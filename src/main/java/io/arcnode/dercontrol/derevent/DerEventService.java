@@ -137,9 +137,19 @@ public class DerEventService {
    * expired event to IDLE, so the ordinary publish path states the released posture by itself.
    */
   private void armRelease(DerEvent event) {
+    // Reason: an envelope never publishes der_dispatch at all, so it has nothing to release. It
+    // also re-POSTs continuously under one mRID with a fresh short interval, so arming it would
+    // queue a task every few seconds for the life of the process.
+    if (event.isEnvelopeOnly()) {
+      return;
+    }
     Instant end = event.getIntervalStart().plusSeconds(event.getDurationSeconds());
     if (end.isAfter(clock.instant())) {
-      scheduler.schedule(() -> publishGoverning(event), end);
+      // Reason: statePosture re-reads the store when it fires, rather than this method capturing
+      // the entity. A captured entity keeps the status it had when armed, so an event the utility
+      // closed early would be republished as still in force at its original interval end —
+      // re-asserting a curtailment that had already ended, which is worse than never releasing.
+      scheduler.schedule(this::statePosture, end);
     }
   }
 
