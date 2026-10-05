@@ -2,6 +2,10 @@ package io.arcnode.dercontrol.dispatch;
 
 import io.arcnode.dercontrol.derevent.DerEventService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
+import jakarta.annotation.PreDestroy;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.paho.mqttv5.client.IMqttToken;
 import org.eclipse.paho.mqttv5.client.MqttCallback;
 import org.eclipse.paho.mqttv5.client.MqttClient;
@@ -51,6 +55,14 @@ public class MqttReconnectHandler implements MqttCallback {
   private final OperatorPolicySubscriber policySubscriber;
   private final DerEventService derEventService;
 
+  /**
+   * Reason: restating publishes, and a synchronous publish issued from Paho's callback thread
+   * blocks forever against the client it is already inside — no exception, no log line, the
+   * restatement simply stops half-done. connectComplete arrives on that thread, so the work has to
+   * leave it. Single-threaded, so two restatements cannot interleave on the same channels.
+   */
+  private final ExecutorService restatements = Executors.newSingleThreadExecutor();
+
   public MqttReconnectHandler(
       MqttClient mqtt,
       DeliveryShortfallMonitor shortfallMonitor,
@@ -76,6 +88,7 @@ public class MqttReconnectHandler implements MqttCallback {
   public void install() {
     mqtt.setCallback(this);
     subscribeAll();
+    restate();
   }
 
   @Override
@@ -85,6 +98,7 @@ public class MqttReconnectHandler implements MqttCallback {
     }
     LOG.warn("🔌 Reconnected to {} — re-establishing subscriptions", serverUri);
     subscribeAll();
+    restate();
   }
 
   /**
@@ -102,10 +116,27 @@ public class MqttReconnectHandler implements MqttCallback {
     resubscribe("dispatch commands", commandSubscriber::subscribe);
     resubscribe("actual active power", actualPowerSubscriber::subscribe);
     resubscribe("operator policy", policySubscriber::subscribe);
-    // Reason: restating der_dispatch belongs here and not on ApplicationReadyEvent, because a
-    // broker restart drops every retained message while this process stays up and never notices.
-    // Boot is only one of the two ways this service's retained state goes missing.
-    resubscribe("der_dispatch posture", derEventService::statePosture);
+  }
+
+  /**
+   * Restates the retained measurements a consumer cannot otherwise know.
+   *
+   * <p>Paired with {@link #subscribeAll} and not folded into it: a broker restart drops every
+   * retained message while this process stays up and never notices, so boot is only one of the two
+   * ways this state goes missing. Dispatched to another thread because it publishes — see {@link
+   * #restatements}.
+   */
+  private void restate() {
+    restatements.submit(() -> resubscribe("der_dispatch posture", derEventService::statePosture));
+  }
+
+  /** Lets the in-flight restatement finish rather than killing it mid-channel. */
+  @PreDestroy
+  public void shutdown() throws InterruptedException {
+    restatements.shutdown();
+    if (!restatements.awaitTermination(5, TimeUnit.SECONDS)) {
+      restatements.shutdownNow();
+    }
   }
 
   /**

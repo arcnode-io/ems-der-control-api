@@ -1,10 +1,16 @@
 package io.arcnode.dercontrol.dispatch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.derevent.DerEventService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -72,7 +78,34 @@ class MqttReconnectHandlerTest {
     // Assert: a broker restart drops every retained message while this process stays up, so
     // re-establishing only the subscriptions leaves der_dispatch silent — and a consumer that
     // gates real power on event_active stays dark until the next event happens to arrive.
-    verify(derEventService).statePosture();
+    //
+    // Awaited, because it must not run on the calling thread: connectComplete arrives on Paho's
+    // callback thread, and a synchronous publish from there deadlocks against the client.
+    verify(derEventService, timeout(2000)).statePosture();
+  }
+
+  @Test
+  void restatesDerDispatchOffTheCallingThread() throws Exception {
+    // Arrange: record which thread the restatement actually runs on
+    AtomicReference<String> ranOn = new AtomicReference<>();
+    CountDownLatch done = new CountDownLatch(1);
+    willAnswer(
+            invocation -> {
+              ranOn.set(Thread.currentThread().getName());
+              done.countDown();
+              return null;
+            })
+        .given(derEventService)
+        .statePosture();
+
+    // Act
+    handler().connectComplete(true, "tcp://broker:1883");
+
+    // Assert: Paho delivers connectComplete on its own callback thread, and a publish issued from
+    // that thread blocks forever waiting on the client it is already inside — no error, the log
+    // simply stops mid-restatement. So the restatement has to be handed to another thread.
+    assertThat(done.await(2, TimeUnit.SECONDS)).isTrue();
+    assertThat(ranOn.get()).isNotEqualTo(Thread.currentThread().getName());
   }
 
   @Test
