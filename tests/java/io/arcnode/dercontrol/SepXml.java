@@ -1,5 +1,7 @@
 package io.arcnode.dercontrol;
 
+import java.time.Instant;
+
 /**
  * IEEE 2030.5 request bodies for the integration tests — the same document shape
  * mock-derms-dispatch-api's own DerControlNotificationFactory emits, so these ITs exercise the real
@@ -46,6 +48,10 @@ final class SepXml {
    * @param controlBaseXml one of this class's DERControlBase fragments
    */
   static String notification(String mrid, int currentStatus, String controlBaseXml) {
+    // Reason: an interval that has ended resolves to IDLE whatever the status says, so the event
+    // has to be open right now for its setpoint to reach the bus — opened a minute ago, an hour
+    // long.
+    long start = Instant.now().minusSeconds(60).getEpochSecond();
     return """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
         <Notification schemaVer="2.2" xmlns="urn:ieee:std:2030.5:ns">\
@@ -56,9 +62,9 @@ final class SepXml {
         <mRID>%s</mRID><creationTime>1789221600</creationTime>\
         <EventStatus><currentStatus>%d</currentStatus><dateTime>1789221600</dateTime>\
         <potentiallySuperseded>false</potentiallySuperseded></EventStatus>\
-        <interval><duration>3600</duration><start>1789221600</start></interval>\
+        <interval><duration>3600</duration><start>%d</start></interval>\
         %s</DERControl></Resource><status>0</status>\
         <subscriptionURI>https://utility.invalid/sub/1</subscriptionURI></Notification>"""
-        .formatted(mrid, currentStatus, controlBaseXml);
+        .formatted(mrid, currentStatus, start, controlBaseXml);
   }
 }

@@ -102,9 +102,11 @@ public class DispatchPublisher {
           DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
       bus.publish(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, state.name()));
       // Reason: a DERControl carries no reason, so the program it arrived under is the only
-      // thing that lets a consumer say "line constraint" rather than "contracted call".
-      bus.publish(
-          DEVICE_ID, "der_event_program", "none", new EnumSample(ts, event.getProgram().name()));
+      // thing that lets a consumer say "line constraint" rather than "contracted call". Once
+      // the event is over it names nothing — the channel is retained, and the last event's
+      // program must not outlive it.
+      String program = state == DerEventState.IDLE ? NO_PROGRAM : event.getProgram().name();
+      bus.publish(DEVICE_ID, "der_event_program", "none", new EnumSample(ts, program));
       Boolean energize = event.getControl().energize();
       if (energize != null) {
         bus.publish(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));

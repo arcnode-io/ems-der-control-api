@@ -291,6 +291,20 @@ class DispatchPublisherTest {
   }
 
   @Test
+  void aClosedEventNamesNoProgramSoTheNameDoesNotOutliveIt() throws Exception {
+    // Arrange: the utility closed it. The channel is retained, so publishing the closed event's
+    // program would tell a late subscriber a line constraint is in force when nothing is.
+    DerEvent closed = event(null, null, DerControlStatus.COMPLETED);
+
+    // Act
+    publisher().publish(closed);
+
+    // Assert
+    verify(mqtt).publish(eq(BASE + "der_event_program/none"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("NONE");
+  }
+
+  @Test
   void derEventStateReflectsManualModePendingWhenNoDecisionYet() throws Exception {
     // Arrange
     given(dispatchSettings.currentMode()).willReturn(DispatchMode.MANUAL);

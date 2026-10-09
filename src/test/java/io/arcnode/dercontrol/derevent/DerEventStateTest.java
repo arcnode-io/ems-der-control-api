@@ -129,6 +129,16 @@ class DerEventStateTest {
   }
 
   @Test
+  void anIntervalThatHasEndedIsIdleEvenWhileTheUtilityStillSaysActive() {
+    // Arrange: the utility never sent a terminal status — it crashed, or partitioned
+    DerEvent event = event(DerControlStatus.ACTIVE);
+
+    // Act / Assert: the interval is the authority on when an event is over
+    assertThat(event.derEventState(DispatchMode.AUTO, START.plusSeconds(3600)))
+        .isEqualTo(DerEventState.IDLE);
+  }
+
+  @Test
   void isActiveDerivesFromDerEventState() {
     // Arrange
     DerEvent event = event(DerControlStatus.ACTIVE);
