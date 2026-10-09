@@ -15,8 +15,18 @@ spring:
     password: ${POSTGRES_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema; Hibernate only checks the entities fit it and refuses to boot if not.
+      ddl-auto: validate
     open-in-view: false
+  flyway:
+    # The schema is shared with device-api, so "has tables already" never means "has ours". A schema
+    # without a history table is marked at 0 so every migration, V1 included, still runs on it;
+    # V1 is idempotent for exactly this reason.
+    baseline-on-migrate: true
+    baseline-version: 0
+    # The database is shared with device-api in the same schema, so the history table carries this
+    # service's name rather than Flyway's default.
+    table: der_control_schema_history
 
 server:
   port: ${app.port}

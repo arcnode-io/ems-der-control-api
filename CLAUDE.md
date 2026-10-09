@@ -289,7 +289,18 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
 - Secrets: environment only, names tracked in `template-secrets.env` (`POSTGRES_PASSWORD`, `MQTT_DER_CONTROL_API_PASSWORD`, `DER_CONTROL_URL`, optional `NVD_API_KEY`).
 
 ### Schema
-- `spring.jpa.hibernate.ddl-auto=update` for now. Flyway is the graduation path for a real service.
+- Flyway owns the schema: versioned SQL in `src/main/resources/db/migration/V<n>__<name>.sql`, run on
+  boot before JPA initialises. `V1__baseline.sql` is the schema as it stood on the live deployment when
+  Flyway arrived, written `IF NOT EXISTS` so it is a no-op there and builds everything on a fresh
+  database (every `*IT`).
+- `spring.jpa.hibernate.ddl-auto=validate`: Hibernate never changes the schema, it refuses to boot if
+  the entities and the migrations disagree (`SchemaMigrationIT` fails on a fresh Postgres). A new
+  column or constraint is a new `V<n>` file, never an entity-only change.
+- The deployment's Postgres schema is shared with device-api, which is why the history table is
+  `der_control_schema_history` (`spring.flyway.table`) and why a schema with no history table is
+  baselined at 0, not Flyway's default 1: "non-empty" says nothing about whether *our* tables exist,
+  and a baseline at 1 would skip V1 on a new box where device-api booted first
+  (`SharedSchemaMigrationIT`).
 
 ### `make` verbs
 Named-verb dispatch layer (the poe-task / npm-script / `cargo cmd` analog) — every verb runs as
