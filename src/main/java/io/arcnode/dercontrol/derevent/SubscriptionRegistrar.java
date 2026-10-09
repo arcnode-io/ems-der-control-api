@@ -43,8 +43,6 @@ public class SubscriptionRegistrar {
    * following links rather than by fixed paths, so this path is a convention between these two
    * services; the utility echoes it back in the Notification rather than resolving it.
    */
-  private static final String SUBSCRIBED_RESOURCE_PATH = "/derp/1/derc";
-
   private static final String SCHEMA_VERSION = "2.2";
 
   /** Subscription::encoding 0 = application/sep+xml, per sep.xsd. */
@@ -72,19 +70,25 @@ public class SubscriptionRegistrar {
   @Scheduled(fixedDelay = RENEW_MILLIS)
   public void register() {
     try {
-      client
-          .post()
-          .uri(utilityBaseUrl + SUBSCRIPTION_PATH)
-          .contentType(MediaType.parseMediaType(SEP_XML))
-          .body(Ieee20305Xml.marshal(subscription()))
-          .retrieve()
-          .toBodilessEntity();
+      // Reason: one Subscription per DERProgram. A Subscription names one resource, and the
+      // program a Notification arrives under is the only thing that says what the event is for.
+      for (DerProgram program : DerProgram.values()) {
+        client
+            .post()
+            .uri(utilityBaseUrl + SUBSCRIPTION_PATH)
+            .contentType(MediaType.parseMediaType(SEP_XML))
+            .body(Ieee20305Xml.marshal(subscription(program)))
+            .retrieve()
+            .toBodilessEntity();
+      }
       // Reason: only log the transition into subscribed. This renews forever, so logging every
       // successful tick would bury everything else.
       if (subscribed.compareAndSet(false, true) && LOG.isInfoEnabled()) {
         LOG.info(
-            "🔔 Subscribed to {} — the utility will push DERControl Notifications to {}",
-            utilityBaseUrl + SUBSCRIBED_RESOURCE_PATH,
+            "🔔 Subscribed to {} programs under {} — the utility will push DERControl"
+                + " Notifications to {}",
+            DerProgram.values().length,
+            utilityBaseUrl,
             publicBaseUrl + NOTIFICATION_PATH);
       }
     } catch (RuntimeException e) {
@@ -100,10 +104,10 @@ public class SubscriptionRegistrar {
   }
 
   /** Package-visible so a test can assert the document without going over HTTP. */
-  SubscriptionElement subscription() {
+  SubscriptionElement subscription(DerProgram program) {
     SubscriptionElement subscription = new SubscriptionElement();
     subscription.setSchemaVer(SCHEMA_VERSION);
-    subscription.setSubscribedResource(utilityBaseUrl + SUBSCRIBED_RESOURCE_PATH);
+    subscription.setSubscribedResource(utilityBaseUrl + program.path());
     subscription.setNotificationURI(publicBaseUrl + NOTIFICATION_PATH);
     subscription.setEncoding(ENCODING_SEP_XML);
     subscription.setLevel(LEVEL);

@@ -9,6 +9,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.arcnode.dercontrol.derevent.DerProgram;
 import io.arcnode.dercontrol.derevent.SubscriptionRegistrar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -58,6 +59,12 @@ class SubscriptionRegistrarIT extends AbstractBrokerIT {
             // encoding 0 = application/sep+xml, per sep.xsd
             .withRequestBody(containing("<encoding>0</encoding>"))
             .withRequestBody(containing("<limit>1</limit>")));
+    // Reason: one Subscription per DERProgram — the program a Notification arrives under is the
+    // only thing that says what the event is for, so the site has to be subscribed to each.
+    wiremock.verify(
+        postRequestedFor(urlEqualTo("/sub")).withRequestBody(containing("/derp/1/derc")));
+    wiremock.verify(
+        postRequestedFor(urlEqualTo("/sub")).withRequestBody(containing("/derp/2/derc")));
   }
 
   @Test
@@ -73,8 +80,10 @@ class SubscriptionRegistrarIT extends AbstractBrokerIT {
     // Assert: the Subscription lives in the utility's own memory, so it has to be renewed rather
     // than registered once. Registering once leaves this site orphaned the moment the utility
     // restarts — it pushes nothing and nothing here notices, because a dispatch that is never
-    // delivered looks exactly like a utility with nothing to dispatch.
-    assertThat(wiremock.findAll(postRequestedFor(urlEqualTo("/sub")))).hasSize(1);
+    // delivered looks exactly like a utility with nothing to dispatch. One POST per program per
+    // tick: every enrolment is renewed, not just the first.
+    assertThat(wiremock.findAll(postRequestedFor(urlEqualTo("/sub"))))
+        .hasSize(DerProgram.values().length);
   }
 
   @Test

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerControlStatus;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DerProgram;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import java.time.Clock;
@@ -84,7 +85,8 @@ class DispatchPublisherTest {
         importLimitW,
         exportLimitW,
         "{}",
-        "lfdi-test");
+        "lfdi-test",
+        DerProgram.DLR_LINE_CONSTRAINT);
   }
 
   @Test
@@ -269,6 +271,21 @@ class DispatchPublisherTest {
     // Assert
     verify(mqtt).publish(eq(BASE + "der_event_state/none"), payload.capture(), eq(0), eq(true));
     assertThat(mapper.readTree(payload.getValue()).get("value").asText()).isEqualTo("ACTIVE");
+  }
+
+  @Test
+  void publishesWhichProgramTheEventCameFromAsEnumSample() throws Exception {
+    // Arrange: a DERControl carries no reason; the program it arrived under is the only thing
+    // that tells a consumer a conductor limit from a contracted call
+    DerEvent e = event(null, null, DerControlStatus.ACTIVE);
+
+    // Act
+    publisher().publish(e);
+
+    // Assert
+    verify(mqtt).publish(eq(BASE + "der_event_program/none"), payload.capture(), eq(0), eq(true));
+    assertThat(mapper.readTree(payload.getValue()).get("value").asText())
+        .isEqualTo("DLR_LINE_CONSTRAINT");
   }
 
   @Test

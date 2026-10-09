@@ -165,8 +165,8 @@ public class DerEventService {
   /**
    * The curtailment governing the site. {@code der_dispatch} is site-level, not a channel per mRID,
    * so closing one event must not release the site while another is still in force — those channels
-   * carry a setpoint written straight through to plant. Most recently received still-open
-   * curtailment wins, since 2030.5 supersession is a later event replacing an earlier one.
+   * carry a setpoint written straight through to plant. The program with the lowest primacy wins,
+   * then the most recently received — 2030.5's own rule for overlapping programs.
    *
    * @param changed the event that just changed — the answer when nothing else is still open
    */
@@ -174,11 +174,19 @@ public class DerEventService {
     return openGoverning().orElse(changed);
   }
 
-  /** The still-open curtailment in force, or empty when the site is uncommanded. */
+  /**
+   * The still-open curtailment in force, or empty when the site is uncommanded.
+   *
+   * <p>Reason for the order: IEEE 2030.5 ranks overlapping controls by their program's primacy
+   * first (lower wins) and only then by which arrived later. Arrival order alone would let a
+   * conductor limit be masked by a later contracted call, or the reverse, purely by timing.
+   */
   private Optional<DerEvent> openGoverning() {
     return repository.findByStatusIn(OPEN_STATUSES).stream()
         .filter(candidate -> !candidate.isEnvelopeOnly())
-        .max(Comparator.comparing(DerEvent::getReceivedAt));
+        .min(
+            Comparator.comparingInt((DerEvent candidate) -> candidate.getProgram().primacy())
+                .thenComparing(DerEvent::getReceivedAt, Comparator.reverseOrder()));
   }
 
   /**
@@ -233,7 +241,8 @@ public class DerEventService {
         request.derControlBase().opModImpLimW(),
         request.derControlBase().opModExpLimW(),
         receivedDocument,
-        lfdi);
+        lfdi,
+        request.program());
   }
 
   private DerEvent apply(DerEvent existing, DerControlRequest request, String lfdi) {

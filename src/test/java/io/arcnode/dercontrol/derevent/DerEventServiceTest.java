@@ -56,7 +56,8 @@ class DerEventServiceTest {
         mrid,
         status,
         new DerControlRequest.Interval(START, 3600L),
-        new DerControlRequest.ControlBase(-1_000_000.0, true, null, null));
+        new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
+        DerProgram.DLR_LINE_CONSTRAINT);
   }
 
   private static DerEvent withId(long id, DerEvent event) {
@@ -104,7 +105,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 "{}",
-                "old-lfdi"));
+                "old-lfdi",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(existing));
     given(repository.save(any(DerEvent.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -138,7 +140,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 "{}",
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(event));
 
     // Act
@@ -188,7 +191,8 @@ class DerEventServiceTest {
             "mrid-1",
             DerControlStatus.ACTIVE,
             new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
-            new DerControlRequest.ControlBase(-1_000_000.0, true, null, null));
+            new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
+            DerProgram.DLR_LINE_CONSTRAINT);
 
     // Act
     service().ingest(openRequest, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
@@ -218,7 +222,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 "{}",
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByIntervalStartAfter(NOW)).willReturn(List.of(armed));
 
     // Act
@@ -264,7 +269,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 RECEIVED_DOCUMENT,
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByStatusIn(any())).willReturn(List.of(underway));
 
     // Act
@@ -290,7 +296,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 RECEIVED_DOCUMENT,
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
     service().rearmFutureEvents();
     ArgumentCaptor<Runnable> armed = ArgumentCaptor.forClass(Runnable.class);
@@ -325,7 +332,8 @@ class DerEventServiceTest {
                 5_000_000.0,
                 null,
                 RECEIVED_DOCUMENT,
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByStatusIn(any())).willReturn(List.of(envelope));
 
     // Act
@@ -334,6 +342,55 @@ class DerEventServiceTest {
     // Assert: an envelope never publishes der_dispatch, so it has nothing to release — and arming
     // one per re-POST would queue a task every few seconds for the life of the process.
     verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+  }
+
+  @Test
+  void theHigherPrimacyProgramGovernsRegardlessOfArrivalOrder() {
+    // Arrange: a flex call in force, then a line constraint arrives later. The constraint's
+    // program outranks the flex program (lower primacy), so it governs der_dispatch — not the
+    // event that happened to arrive last. Same rule 2030.5 gives for overlapping programs.
+    DerEvent flex =
+        withId(
+            1,
+            new DerEvent(
+                "flex-1",
+                DerControlStatus.ACTIVE,
+                NOW.minusSeconds(120),
+                3600L,
+                1_120_000.0,
+                true,
+                null,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1",
+                DerProgram.ERCOT_FLEX));
+    DerEvent constraint =
+        withId(
+            2,
+            new DerEvent(
+                "line-1",
+                DerControlStatus.ACTIVE,
+                NOW.minusSeconds(60),
+                3600L,
+                null,
+                true,
+                null,
+                null,
+                RECEIVED_DOCUMENT,
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
+    // Reason: receivedAt is stamped in the constructor, so pin it explicitly — the constraint
+    // must have arrived FIRST, or arrival order alone would pick it and prove nothing.
+    ReflectionTestUtils.setField(constraint, "receivedAt", NOW.minusSeconds(120));
+    ReflectionTestUtils.setField(flex, "receivedAt", NOW.minusSeconds(60));
+    given(repository.findByStatusIn(any())).willReturn(List.of(flex, constraint));
+
+    // Act
+    service().statePosture();
+
+    // Assert: primacy 0 outranks primacy 1 even though the flex call is the newer event
+    verify(publisher).publish(constraint);
+    verify(publisher, never()).publish(flex);
   }
 
   @Test
@@ -367,7 +424,8 @@ class DerEventServiceTest {
                 null,
                 null,
                 RECEIVED_DOCUMENT,
-                "lfdi-1"));
+                "lfdi-1",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
 
     // Act
@@ -442,7 +500,17 @@ class DerEventServiceTest {
   private static DerEvent event(String mrid, Boolean approved) {
     DerEvent event =
         new DerEvent(
-            mrid, DerControlStatus.SCHEDULED, START, 3600L, null, null, null, null, "{}", "lfdi-1");
+            mrid,
+            DerControlStatus.SCHEDULED,
+            START,
+            3600L,
+            null,
+            null,
+            null,
+            null,
+            "{}",
+            "lfdi-1",
+            DerProgram.DLR_LINE_CONSTRAINT);
     event.setApproved(approved);
     return event;
   }
@@ -454,12 +522,32 @@ class DerEventServiceTest {
         withId(
             1,
             new DerEvent(
-                "a", DerControlStatus.ACTIVE, START, 60L, null, null, null, null, "{}", "lfdi-a"));
+                "a",
+                DerControlStatus.ACTIVE,
+                START,
+                60L,
+                null,
+                null,
+                null,
+                null,
+                "{}",
+                "lfdi-a",
+                DerProgram.DLR_LINE_CONSTRAINT));
     DerEvent b =
         withId(
             2,
             new DerEvent(
-                "b", DerControlStatus.ACTIVE, START, 60L, null, null, null, null, "{}", "lfdi-b"));
+                "b",
+                DerControlStatus.ACTIVE,
+                START,
+                60L,
+                null,
+                null,
+                null,
+                null,
+                "{}",
+                "lfdi-b",
+                DerProgram.DLR_LINE_CONSTRAINT));
     given(repository.findByStatus(DerControlStatus.ACTIVE)).willReturn(List.of(a, b));
 
     // Act
@@ -477,7 +565,8 @@ class DerEventServiceTest {
             "mrid-envelope",
             DerControlStatus.ACTIVE,
             new DerControlRequest.Interval(START, 10L),
-            new DerControlRequest.ControlBase(null, null, 500_000.0, 0.0));
+            new DerControlRequest.ControlBase(null, null, 500_000.0, 0.0),
+            DerProgram.DLR_LINE_CONSTRAINT);
     given(repository.findByMrid("mrid-envelope")).willReturn(Optional.empty());
     given(repository.save(any(DerEvent.class))).willAnswer(call -> call.getArgument(0));
 
@@ -520,7 +609,8 @@ class DerEventServiceTest {
                 "mrid-a",
                 DerControlStatus.CANCELLED,
                 new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
-                new DerControlRequest.ControlBase(-1_000_000.0, true, null, null)),
+                new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
+                DerProgram.DLR_LINE_CONSTRAINT),
             RECEIVED_DOCUMENT,
             TestCerts.HEADER_VALUE);
 
@@ -543,6 +633,7 @@ class DerEventServiceTest {
         null,
         null,
         RECEIVED_DOCUMENT,
-        TestCerts.LFDI);
+        TestCerts.LFDI,
+        DerProgram.DLR_LINE_CONSTRAINT);
   }
 }

@@ -68,6 +68,11 @@ public class DerEvent {
   @Column(nullable = false)
   private String submittedByLfdi;
 
+  /** Which of the utility's programs issued this event — what it is for, and its rank. */
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, updatable = false)
+  private DerProgram program;
+
   /** JPA-only. */
   protected DerEvent() {
     // JPA instantiates via reflection, never calls this directly
@@ -83,7 +88,8 @@ public class DerEvent {
       @Nullable Double importLimitW,
       @Nullable Double exportLimitW,
       String rawPayload,
-      String submittedByLfdi) {
+      String submittedByLfdi,
+      DerProgram program) {
     this.mrid = mrid;
     this.status = status;
     this.intervalStart = intervalStart;
@@ -94,6 +100,7 @@ public class DerEvent {
     this.exportLimitW = exportLimitW;
     this.rawPayload = rawPayload;
     this.submittedByLfdi = submittedByLfdi;
+    this.program = program;
     this.receivedAt = Instant.now();
   }
 
@@ -218,6 +225,10 @@ public class DerEvent {
 
   public String getRawPayload() {
     return rawPayload;
+  }
+
+  public DerProgram getProgram() {
+    return program;
   }
 
   public String getSubmittedByLfdi() {

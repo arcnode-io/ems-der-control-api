@@ -65,7 +65,8 @@ public final class DerControlNotificationParser {
         new DerControlRequest.Interval(
             Instant.ofEpochSecond(control.getInterval().getStart().getValue()),
             control.getInterval().getDuration()),
-        controlBase(control.getDERControlBase()));
+        controlBase(control.getDERControlBase()),
+        DerProgram.fromSubscribedResource(notification.getSubscribedResource()));
   }
 
   /**

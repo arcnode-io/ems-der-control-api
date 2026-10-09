@@ -32,6 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class DispatchPublisher {
 
+  /** The program label when nothing is in force — retained, so no stale name outlives its event. */
+  private static final String NO_PROGRAM = "NONE";
+
   private static final Logger LOG = LoggerFactory.getLogger(DispatchPublisher.class);
   private static final String DEVICE_ID = "der_dispatch";
   private static final String ENVELOPE_DEVICE_ID = "operating_envelope";
@@ -73,6 +76,7 @@ public class DispatchPublisher {
     send(DEVICE_ID, "target_setpoint_present", "none", new BooleanSample(ts, false));
     send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, false));
     send(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, DerEventState.IDLE.name()));
+    send(DEVICE_ID, "der_event_program", "none", new EnumSample(ts, NO_PROGRAM));
   }
 
   /** Publish the setpoint + status + envelope channels for one event. */
@@ -113,6 +117,9 @@ public class DispatchPublisher {
       send(DEVICE_ID, "target_setpoint_present", "none", new BooleanSample(ts, setpointInForce));
       send(DEVICE_ID, "event_active", "none", new BooleanSample(ts, event.isActive(mode, now)));
       send(DEVICE_ID, "der_event_state", "none", new EnumSample(ts, state.name()));
+      // Reason: a DERControl carries no reason, so the program it arrived under is the only
+      // thing that lets a consumer say "line constraint" rather than "contracted call".
+      send(DEVICE_ID, "der_event_program", "none", new EnumSample(ts, event.getProgram().name()));
       Boolean energize = event.getEnergize();
       if (energize != null) {
         send(DEVICE_ID, "energize_enabled", "none", new BooleanSample(ts, energize));

@@ -14,7 +14,17 @@ class DerEventStateTest {
 
   private static DerEvent event(DerControlStatus status) {
     return new DerEvent(
-        "mrid-1", status, START, 3600L, -1_000_000.0, true, null, null, "{}", "lfdi-1");
+        "mrid-1",
+        status,
+        START,
+        3600L,
+        -1_000_000.0,
+        true,
+        null,
+        null,
+        "{}",
+        "lfdi-1",
+        DerProgram.DLR_LINE_CONSTRAINT);
   }
 
   @Test

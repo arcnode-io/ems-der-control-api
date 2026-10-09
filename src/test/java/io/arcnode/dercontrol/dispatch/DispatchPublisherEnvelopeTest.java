@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerControlStatus;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DerProgram;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import java.time.Clock;
@@ -65,7 +66,18 @@ class DispatchPublisherEnvelopeTest {
   /** A bounded constraint: an import limit with an interval already open, and no setpoint. */
   private static DerEvent constraint(DerControlStatus status, Boolean approved) {
     DerEvent event =
-        new DerEvent("mrid-1", status, FIXED, 3600L, null, true, 0.0, null, "{}", "lfdi-test");
+        new DerEvent(
+            "mrid-1",
+            status,
+            FIXED,
+            3600L,
+            null,
+            true,
+            0.0,
+            null,
+            "{}",
+            "lfdi-test",
+            DerProgram.DLR_LINE_CONSTRAINT);
     event.setApproved(approved);
     return event;
   }

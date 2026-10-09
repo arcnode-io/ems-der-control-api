@@ -93,6 +93,32 @@ class DerControlNotificationParserTest {
   }
 
   @Test
+  void decodesTheProgramFromTheResourceTheUtilityNamed() {
+    // Arrange: the same control, pushed under the flex program rather than the line-constraint one
+    String xml = CURTAILMENT.replace("/derp/1/derc", "/derp/2/derc");
+
+    // Act
+    DerControlRequest request = DerControlNotificationParser.parse(xml);
+
+    // Assert: a DERControl carries no reason; the program it came from is how 2030.5 says what it
+    // is for, and it is the only thing that tells a flex call from a conductor limit upstream
+    assertThat(request.program()).isEqualTo(DerProgram.ERCOT_FLEX);
+    assertThat(DerControlNotificationParser.parse(CURTAILMENT).program())
+        .isEqualTo(DerProgram.DLR_LINE_CONSTRAINT);
+  }
+
+  @Test
+  void rejectsANotificationFromAProgramThisSiteNeverSubscribedTo() {
+    // Arrange
+    String xml = CURTAILMENT.replace("/derp/1/derc", "/derp/7/derc");
+
+    // Act / Assert: an event from a program we are not enrolled in is the utility's error, not
+    // something to quietly file under a default
+    assertThatThrownBy(() -> DerControlNotificationParser.parse(xml))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void rejectsANotificationWhoseResourceIsNotADerControl() {
     // Arrange: a structurally valid Notification with no DERControl in the Resource slot
     String noControl =

@@ -1,6 +1,7 @@
 package io.arcnode.dercontrol.derevent.dto;
 
 import io.arcnode.dercontrol.derevent.DerControlStatus;
+import io.arcnode.dercontrol.derevent.DerProgram;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
@@ -16,7 +17,11 @@ import org.jspecify.annotations.Nullable;
  * @param derControlBase the commanded setpoint
  */
 public record DerControlRequest(
-    String mrid, DerControlStatus eventStatus, Interval interval, ControlBase derControlBase) {
+    String mrid,
+    DerControlStatus eventStatus,
+    Interval interval,
+    ControlBase derControlBase,
+    DerProgram program) {
 
   /**
    * @param start window start ({@code DateTimeInterval.start})

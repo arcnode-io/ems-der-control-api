@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DerControlStatus;
 import io.arcnode.dercontrol.derevent.DerEvent;
+import io.arcnode.dercontrol.derevent.DerProgram;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import java.time.Clock;
@@ -67,7 +68,17 @@ class DispatchPublisherSetpointTest {
 
   private static DerEvent event(Double targetW, DerControlStatus status) {
     return new DerEvent(
-        "mrid-1", status, FIXED, 3600L, targetW, true, null, null, "{}", "lfdi-test");
+        "mrid-1",
+        status,
+        FIXED,
+        3600L,
+        targetW,
+        true,
+        null,
+        null,
+        "{}",
+        "lfdi-test",
+        DerProgram.DLR_LINE_CONSTRAINT);
   }
 
   private boolean publishedPresence(DerEvent event) throws Exception {
