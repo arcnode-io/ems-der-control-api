@@ -36,13 +36,13 @@ public class EnvelopeFeedMonitor {
   private static final Logger LOG = LoggerFactory.getLogger(EnvelopeFeedMonitor.class);
   private static final long CHECK_MILLIS = 5_000L;
 
-  private final DispatchPublisher publisher;
+  private final SiteStatusPublisher publisher;
   private final Clock clock;
 
   private final AtomicReference<@Nullable Instant> validUntil = new AtomicReference<>();
   private final AtomicReference<@Nullable String> published = new AtomicReference<>();
 
-  public EnvelopeFeedMonitor(DispatchPublisher publisher, Clock clock) {
+  public EnvelopeFeedMonitor(SiteStatusPublisher publisher, Clock clock) {
     this.publisher = publisher;
     this.clock = clock;
   }

@@ -52,7 +52,7 @@ public class DeliveryShortfallMonitor {
   private final MqttClient mqtt;
   private final Config config;
   private final JsonMapper mapper;
-  private final DispatchPublisher publisher;
+  private final SiteStatusPublisher publisher;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   private final AtomicReference<@Nullable Double> lastTarget = new AtomicReference<>();
@@ -63,7 +63,7 @@ public class DeliveryShortfallMonitor {
   private final AtomicBoolean currentlyOverdelivering = new AtomicBoolean();
 
   public DeliveryShortfallMonitor(
-      MqttClient mqtt, Config config, JsonMapper mapper, DispatchPublisher publisher) {
+      MqttClient mqtt, Config config, JsonMapper mapper, SiteStatusPublisher publisher) {
     this.mqtt = mqtt;
     this.config = config;
     this.mapper = mapper;

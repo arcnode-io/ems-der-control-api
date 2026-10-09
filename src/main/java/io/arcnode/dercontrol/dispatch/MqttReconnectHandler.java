@@ -1,6 +1,6 @@
 package io.arcnode.dercontrol.dispatch;
 
-import io.arcnode.dercontrol.derevent.DerEventService;
+import io.arcnode.dercontrol.derevent.DerEventPostureService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
@@ -53,7 +53,7 @@ public class MqttReconnectHandler implements MqttCallback {
   private final DispatchCommandSubscriber commandSubscriber;
   private final ActualActivePowerSubscriber actualPowerSubscriber;
   private final OperatorPolicySubscriber policySubscriber;
-  private final DerEventService derEventService;
+  private final DerEventPostureService posture;
 
   /**
    * Reason: restating publishes, and a synchronous publish issued from Paho's callback thread
@@ -69,13 +69,13 @@ public class MqttReconnectHandler implements MqttCallback {
       DispatchCommandSubscriber commandSubscriber,
       ActualActivePowerSubscriber actualPowerSubscriber,
       OperatorPolicySubscriber policySubscriber,
-      DerEventService derEventService) {
+      DerEventPostureService posture) {
     this.mqtt = mqtt;
     this.shortfallMonitor = shortfallMonitor;
     this.commandSubscriber = commandSubscriber;
     this.actualPowerSubscriber = actualPowerSubscriber;
     this.policySubscriber = policySubscriber;
-    this.derEventService = derEventService;
+    this.posture = posture;
   }
 
   /**
@@ -127,7 +127,7 @@ public class MqttReconnectHandler implements MqttCallback {
    * #restatements}.
    */
   private void restate() {
-    restatements.submit(() -> resubscribe("der_dispatch posture", derEventService::statePosture));
+    restatements.submit(() -> resubscribe("der_dispatch posture", posture::statePosture));
   }
 
   /** Lets the in-flight restatement finish rather than killing it mid-channel. */

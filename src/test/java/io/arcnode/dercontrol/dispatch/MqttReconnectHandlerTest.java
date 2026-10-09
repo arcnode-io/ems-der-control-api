@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.arcnode.dercontrol.derevent.DerEventService;
+import io.arcnode.dercontrol.derevent.DerEventPostureService;
 import io.arcnode.dercontrol.mirror.ActualActivePowerSubscriber;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +30,7 @@ class MqttReconnectHandlerTest {
   @Mock private DispatchCommandSubscriber commandSubscriber;
   @Mock private ActualActivePowerSubscriber actualPowerSubscriber;
   @Mock private OperatorPolicySubscriber policySubscriber;
-  @Mock private DerEventService derEventService;
+  @Mock private DerEventPostureService posture;
 
   private MqttReconnectHandler handler() {
     return new MqttReconnectHandler(
@@ -39,7 +39,7 @@ class MqttReconnectHandlerTest {
         commandSubscriber,
         actualPowerSubscriber,
         policySubscriber,
-        derEventService);
+        posture);
   }
 
   @Test
@@ -81,7 +81,7 @@ class MqttReconnectHandlerTest {
     //
     // Awaited, because it must not run on the calling thread: connectComplete arrives on Paho's
     // callback thread, and a synchronous publish from there deadlocks against the client.
-    verify(derEventService, timeout(2000)).statePosture();
+    verify(posture, timeout(2000)).statePosture();
   }
 
   @Test
@@ -95,7 +95,7 @@ class MqttReconnectHandlerTest {
               done.countDown();
               return null;
             })
-        .given(derEventService)
+        .given(posture)
         .statePosture();
 
     // Act

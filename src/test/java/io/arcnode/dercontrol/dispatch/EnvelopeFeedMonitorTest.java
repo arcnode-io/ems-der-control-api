@@ -26,7 +26,7 @@ class EnvelopeFeedMonitorTest {
 
   private static final Instant NOW = Instant.parse("2026-09-27T12:00:00Z");
 
-  @Mock private DispatchPublisher publisher;
+  @Mock private SiteStatusPublisher publisher;
 
   /** Advanceable fake — same pattern as the dispatch package's other clocks. */
   private static final class MutableClock extends Clock {

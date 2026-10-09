@@ -63,7 +63,9 @@ class DispatchPublisherSetpointTest {
 
   private DispatchPublisher publisher() {
     return new DispatchPublisher(
-        mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), dispatchSettings);
+        new MeasurementPublisher(mqtt, mapper, config),
+        Clock.fixed(FIXED, ZoneOffset.UTC),
+        dispatchSettings);
   }
 
   private static DerEvent event(Double targetW, DerControlStatus status) {

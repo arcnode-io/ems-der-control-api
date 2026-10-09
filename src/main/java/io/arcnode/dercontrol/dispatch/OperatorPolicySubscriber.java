@@ -47,7 +47,7 @@ public class OperatorPolicySubscriber {
   private final Config config;
   private final DispatchSettingsService settings;
   private final JsonMapper mapper;
-  private final DispatchPublisher publisher;
+  private final SiteStatusPublisher publisher;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   public OperatorPolicySubscriber(
@@ -55,7 +55,7 @@ public class OperatorPolicySubscriber {
       Config config,
       DispatchSettingsService settings,
       JsonMapper mapper,
-      DispatchPublisher publisher) {
+      SiteStatusPublisher publisher) {
     this.mqtt = mqtt;
     this.config = config;
     this.settings = settings;

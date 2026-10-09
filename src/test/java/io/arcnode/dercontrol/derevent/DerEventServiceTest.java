@@ -1,21 +1,20 @@
 package io.arcnode.dercontrol.derevent;
 
+import static io.arcnode.dercontrol.derevent.DerEventFixtures.RECEIVED_DOCUMENT;
+import static io.arcnode.dercontrol.derevent.DerEventFixtures.START;
+import static io.arcnode.dercontrol.derevent.DerEventFixtures.curtailment;
+import static io.arcnode.dercontrol.derevent.DerEventFixtures.request;
+import static io.arcnode.dercontrol.derevent.DerEventFixtures.withId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.TestCerts;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
-import io.arcnode.dercontrol.dispatch.DispatchPublisher;
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -23,50 +22,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * Unit — mocked repository + publisher. The received document is stored verbatim, so these tests
- * pass a stand-in for it rather than a full Notification; parsing is covered by
- * DerControlNotificationParserTest. AAA.
+ * Unit — mocked repository + posture service. Storing and looking up events; what the bus is told
+ * is DerEventPostureServiceTest's. AAA.
  */
 @ExtendWith(MockitoExtension.class)
 class DerEventServiceTest {
 
-  private static final Instant START = Instant.parse("2026-09-08T14:00:00Z");
-  private static final Instant NOW = Instant.parse("2026-09-08T13:00:00Z");
-
-  // Reason: DerEvent.rawPayload keeps the document exactly as it arrived; its content is
-  // irrelevant to this service, which never re-reads it.
-  private static final String RECEIVED_DOCUMENT = "<Notification/>";
-
   @Mock private DerEventRepository repository;
-  @Mock private DispatchPublisher publisher;
+  @Mock private DerEventPostureService posture;
   @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
-  @Mock private TaskScheduler scheduler;
-  private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
   private DerEventService service() {
-    return new DerEventService(repository, publisher, envelopeFeedMonitor, clock, scheduler);
-  }
-
-  private static DerControlRequest request(String mrid, DerControlStatus status) {
-    return new DerControlRequest(
-        mrid,
-        status,
-        new DerControlRequest.Interval(START, 3600L),
-        new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
-        DerProgram.DLR_LINE_CONSTRAINT);
-  }
-
-  private static DerEvent withId(long id, DerEvent event) {
-    ReflectionTestUtils.setField(event, "id", id);
-    return event;
+    return new DerEventService(repository, posture, envelopeFeedMonitor);
   }
 
   @Test
-  void ingestSavesNewEventAndPublishes() {
+  void ingestSavesNewEventAndPublishesTheGoverningPosture() {
     // Arrange
     given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
     given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
@@ -85,7 +58,7 @@ class DerEventServiceTest {
     assertThat(result.targetActivePowerW()).isEqualTo(-1_000_000.0);
     assertThat(result.submittedByLfdi()).isEqualTo(TestCerts.LFDI);
     ArgumentCaptor<DerEvent> published = ArgumentCaptor.forClass(DerEvent.class);
-    verify(publisher).publish(published.capture());
+    verify(posture).publishGoverning(published.capture());
     assertThat(published.getValue().getMrid()).isEqualTo("mrid-1");
   }
 
@@ -93,20 +66,7 @@ class DerEventServiceTest {
   void ingestUpdatesExistingEventOnRetransmit() {
     // Arrange: same mRID re-sent as Cancelled — updates the existing row, doesn't duplicate it
     DerEvent existing =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                START,
-                3600L,
-                -1_000_000.0,
-                true,
-                null,
-                null,
-                "{}",
-                "old-lfdi",
-                DerProgram.DLR_LINE_CONSTRAINT));
+        withId(1, curtailment("mrid-1", DerControlStatus.ACTIVE, START, -1_000_000.0));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(existing));
     given(repository.save(any(DerEvent.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -125,23 +85,26 @@ class DerEventServiceTest {
   }
 
   @Test
+  void ingestArmsTheRepublishAtStartAndTheReleaseAtEnd() {
+    // Arrange
+    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
+    DerEvent saved = withId(1, curtailment("mrid-1", DerControlStatus.ACTIVE, START, -1.0));
+    given(repository.save(any(DerEvent.class))).willReturn(saved);
+
+    // Act
+    service()
+        .ingest(
+            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
+
+    // Assert: both timers are the posture service's to arm, with the persisted event
+    verify(posture).armFutureRepublish(saved);
+    verify(posture).armRelease(saved);
+  }
+
+  @Test
   void findByMridReturnsResponseWhenPresent() {
     // Arrange
-    DerEvent event =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                START,
-                3600L,
-                500.0,
-                null,
-                null,
-                null,
-                "{}",
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
+    DerEvent event = withId(1, curtailment("mrid-1", DerControlStatus.ACTIVE, START, 500.0));
     given(repository.findByMrid("mrid-1")).willReturn(Optional.of(event));
 
     // Act
@@ -162,392 +125,14 @@ class DerEventServiceTest {
 
     // Assert
     assertThat(result).isEmpty();
-    verify(publisher, never()).publish(any());
-  }
-
-  @Test
-  void ingestPublishesImmediatelyAndArmsFutureRepublishWhenIntervalNotYetOpen() {
-    // Arrange: START is after the fixed NOW — interval hasn't opened yet
-    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
-    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
-
-    // Act
-    service()
-        .ingest(
-            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
-
-    // Assert: PENDING/ARMED visible right away, and re-armed for when the interval opens
-    verify(publisher, times(1)).publish(any(DerEvent.class));
-    verify(scheduler).schedule(any(Runnable.class), eq(START));
-  }
-
-  @Test
-  void ingestDoesNotArmARepublishWhenIntervalAlreadyOpen() {
-    // Arrange: an event whose interval.start is already in the past relative to NOW
-    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
-    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
-    DerControlRequest openRequest =
-        new DerControlRequest(
-            "mrid-1",
-            DerControlStatus.ACTIVE,
-            new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
-            new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
-            DerProgram.DLR_LINE_CONSTRAINT);
-
-    // Act
-    service().ingest(openRequest, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
-
-    // Assert: still publishes once, and arms no republish at a start that has already passed.
-    // The release at interval end is armed regardless and is asserted separately — an event
-    // already underway is exactly the case that still needs releasing.
-    verify(publisher, times(1)).publish(any(DerEvent.class));
-    verify(scheduler, never()).schedule(any(Runnable.class), eq(NOW.minusSeconds(60)));
-    verify(scheduler).schedule(any(Runnable.class), eq(NOW.plusSeconds(3540)));
-  }
-
-  @Test
-  void rearmsPersistedFutureEventsOnStartup() {
-    // Arrange: a restart-recovery scenario — an event was persisted with a future interval.start
-    // before the process died, and the in-memory TaskScheduler lost its scheduled task with it.
-    DerEvent armed =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                START,
-                3600L,
-                -1_000_000.0,
-                true,
-                null,
-                null,
-                "{}",
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    given(repository.findByIntervalStartAfter(NOW)).willReturn(List.of(armed));
-
-    // Act
-    service().rearmFutureEvents();
-
-    // Assert
-    verify(scheduler).schedule(any(Runnable.class), eq(START));
-  }
-
-  @Test
-  void armsAReleaseAtTheEndOfAnIngestedEventsInterval() {
-    // Arrange: an event in force now, ending an hour out
-    given(repository.findByMrid("mrid-1")).willReturn(Optional.empty());
-    DerEvent saved = withId(1, event("mrid-1", null));
-    given(repository.save(any(DerEvent.class))).willReturn(saved);
-
-    // Act
-    service()
-        .ingest(
-            request("mrid-1", DerControlStatus.ACTIVE), RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
-
-    // Assert: scheduled for interval end, not just interval start. Without this the plant keeps
-    // executing an expired setpoint until the utility happens to send a terminal status — a DERMS
-    // that crashes or partitions leaves storage discharging to its floor.
-    verify(scheduler).schedule(any(Runnable.class), eq(START.plusSeconds(3600)));
-  }
-
-  @Test
-  void rearmsTheReleaseOfAnEventAlreadyUnderwayOnBoot() {
-    // Arrange: a restart mid-event. The scheduler is in-memory, so the release armed at ingest
-    // died with the process — and the event's own interval is the only thing that still knows
-    // when it ends.
-    DerEvent underway =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                NOW.minusSeconds(60),
-                3600L,
-                -1_000_000.0,
-                true,
-                null,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    given(repository.findByStatusIn(any())).willReturn(List.of(underway));
-
-    // Act
-    service().rearmFutureEvents();
-
-    // Assert
-    verify(scheduler).schedule(any(Runnable.class), eq(NOW.plusSeconds(3540)));
-  }
-
-  @Test
-  void releasesFromTheStoreRatherThanTheEventItWasArmedWith() {
-    // Arrange: an event in force, armed for release at its interval end
-    DerEvent inForce =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                NOW.minusSeconds(60),
-                3600L,
-                -1_000_000.0,
-                true,
-                null,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
-    service().rearmFutureEvents();
-    ArgumentCaptor<Runnable> armed = ArgumentCaptor.forClass(Runnable.class);
-    verify(scheduler).schedule(armed.capture(), any(Instant.class));
-    // the utility closed it early, so by the time the release fires nothing is open
-    given(repository.findByStatusIn(any())).willReturn(List.of());
-
-    // Act
-    armed.getValue().run();
-
-    // Assert: the posture comes from the store at fire time. Holding the entity would republish
-    // the status it had when armed — re-asserting a curtailment the utility already ended, which
-    // is worse than never releasing at all.
-    verify(publisher).publishIdlePosture();
-    verify(publisher, never()).publish(inForce);
-  }
-
-  @Test
-  void armsNoReleaseForAnEnvelopeOnlyEvent() {
-    // Arrange: the operating envelope re-POSTs continuously under one mRID with a fresh short
-    // interval each time
-    DerEvent envelope =
-        withId(
-            1,
-            new DerEvent(
-                "env-1",
-                DerControlStatus.ACTIVE,
-                NOW,
-                10L,
-                null,
-                null,
-                5_000_000.0,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    given(repository.findByStatusIn(any())).willReturn(List.of(envelope));
-
-    // Act
-    service().rearmFutureEvents();
-
-    // Assert: an envelope never publishes der_dispatch, so it has nothing to release — and arming
-    // one per re-POST would queue a task every few seconds for the life of the process.
-    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
-  }
-
-  @Test
-  void theHigherPrimacyProgramGovernsRegardlessOfArrivalOrder() {
-    // Arrange: a flex call in force, then a line constraint arrives later. The constraint's
-    // program outranks the flex program (lower primacy), so it governs der_dispatch — not the
-    // event that happened to arrive last. Same rule 2030.5 gives for overlapping programs.
-    DerEvent flex =
-        withId(
-            1,
-            new DerEvent(
-                "flex-1",
-                DerControlStatus.ACTIVE,
-                NOW.minusSeconds(120),
-                3600L,
-                1_120_000.0,
-                true,
-                null,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.ERCOT_FLEX));
-    DerEvent constraint =
-        withId(
-            2,
-            new DerEvent(
-                "line-1",
-                DerControlStatus.ACTIVE,
-                NOW.minusSeconds(60),
-                3600L,
-                null,
-                true,
-                null,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    // Reason: receivedAt is stamped in the constructor, so pin it explicitly — the constraint
-    // must have arrived FIRST, or arrival order alone would pick it and prove nothing.
-    ReflectionTestUtils.setField(constraint, "receivedAt", NOW.minusSeconds(120));
-    ReflectionTestUtils.setField(flex, "receivedAt", NOW.minusSeconds(60));
-    given(repository.findByStatusIn(any())).willReturn(List.of(flex, constraint));
-
-    // Act
-    service().statePosture();
-
-    // Assert: primacy 0 outranks primacy 1 even though the flex call is the newer event
-    verify(publisher).publish(constraint);
-    verify(publisher, never()).publish(flex);
-  }
-
-  @Test
-  void statesTheIdlePostureOnBootWhenNothingIsInForce() {
-    // Arrange: a site that has never been curtailed. Nothing is persisted, and the broker's
-    // retained state went with its container, so no consumer can know the site is uncommanded
-    // unless this says so.
-    given(repository.findByStatusIn(any())).willReturn(List.of());
-
-    // Act
-    service().statePosture();
-
-    // Assert
-    verify(publisher).publishIdlePosture();
-  }
-
-  @Test
-  void republishesAnInForceEventOnBootRatherThanClaimingIdle() {
-    // Arrange: the process restarted mid-curtailment. Publishing the idle posture here would tell
-    // every consumer the plant is free, which on the charge path means importing during an event.
-    DerEvent inForce =
-        withId(
-            1,
-            new DerEvent(
-                "mrid-1",
-                DerControlStatus.ACTIVE,
-                NOW.minusSeconds(60),
-                3600L,
-                -1_000_000.0,
-                true,
-                null,
-                null,
-                RECEIVED_DOCUMENT,
-                "lfdi-1",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    given(repository.findByStatusIn(any())).willReturn(List.of(inForce));
-
-    // Act
-    service().statePosture();
-
-    // Assert
-    verify(publisher).publish(inForce);
-    verify(publisher, never()).publishIdlePosture();
-  }
-
-  @Test
-  void approveCurrentPendingByMridTargetsThatExactEvent() {
-    // Arrange: two events pending at once — mrid disambiguates which one
-    DerEvent target = withId(1, event("mrid-1", null));
-    given(repository.findByMrid("mrid-1")).willReturn(Optional.of(target));
-    given(repository.save(target)).willReturn(target);
-
-    // Act
-    service().approveCurrentPending("mrid-1");
-
-    // Assert
-    assertThat(target.getApproved()).isTrue();
-    verify(publisher).publish(target);
-    verify(repository, never()).findFirstByApprovedIsNullOrderByIntervalStartAsc();
-  }
-
-  @Test
-  void rejectCurrentPendingByMridTargetsThatExactEvent() {
-    // Arrange
-    DerEvent target = withId(1, event("mrid-1", null));
-    given(repository.findByMrid("mrid-1")).willReturn(Optional.of(target));
-    given(repository.save(target)).willReturn(target);
-
-    // Act
-    service().rejectCurrentPending("mrid-1");
-
-    // Assert
-    assertThat(target.getApproved()).isFalse();
-    verify(publisher).publish(target);
-  }
-
-  @Test
-  void approveCurrentPendingWithNoMridFallsBackToNearestIntervalStart() {
-    // Arrange: no mrid on the command (fixed commands/{verb}/event_active/none topic shape has no
-    // slot for one) — resolve whichever still-undecided event is nearest its interval.start
-    DerEvent nearest = withId(1, event("mrid-1", null));
-    given(repository.findFirstByApprovedIsNullOrderByIntervalStartAsc())
-        .willReturn(Optional.of(nearest));
-    given(repository.save(nearest)).willReturn(nearest);
-
-    // Act
-    service().approveCurrentPending(null);
-
-    // Assert
-    assertThat(nearest.getApproved()).isTrue();
-    verify(publisher).publish(nearest);
-  }
-
-  @Test
-  void decideCurrentPendingIsANoOpWhenNothingResolves() {
-    // Arrange: no mrid given, nothing currently undecided
-    given(repository.findFirstByApprovedIsNullOrderByIntervalStartAsc())
-        .willReturn(Optional.empty());
-
-    // Act
-    service().approveCurrentPending(null);
-
-    // Assert
-    verify(publisher, never()).publish(any());
-  }
-
-  private static DerEvent event(String mrid, Boolean approved) {
-    DerEvent event =
-        new DerEvent(
-            mrid,
-            DerControlStatus.SCHEDULED,
-            START,
-            3600L,
-            null,
-            null,
-            null,
-            null,
-            "{}",
-            "lfdi-1",
-            DerProgram.DLR_LINE_CONSTRAINT);
-    event.setApproved(approved);
-    return event;
+    verify(posture, never()).publishGoverning(any());
   }
 
   @Test
   void findByStatusReturnsMatchingEvents() {
     // Arrange
-    DerEvent a =
-        withId(
-            1,
-            new DerEvent(
-                "a",
-                DerControlStatus.ACTIVE,
-                START,
-                60L,
-                null,
-                null,
-                null,
-                null,
-                "{}",
-                "lfdi-a",
-                DerProgram.DLR_LINE_CONSTRAINT));
-    DerEvent b =
-        withId(
-            2,
-            new DerEvent(
-                "b",
-                DerControlStatus.ACTIVE,
-                START,
-                60L,
-                null,
-                null,
-                null,
-                null,
-                "{}",
-                "lfdi-b",
-                DerProgram.DLR_LINE_CONSTRAINT));
+    DerEvent a = withId(1, curtailment("a", DerControlStatus.ACTIVE, START, null));
+    DerEvent b = withId(2, curtailment("b", DerControlStatus.ACTIVE, START, null));
     given(repository.findByStatus(DerControlStatus.ACTIVE)).willReturn(List.of(a, b));
 
     // Act
@@ -591,49 +176,5 @@ class DerEventServiceTest {
 
     // Assert
     verify(envelopeFeedMonitor, never()).recordEnvelope(any());
-  }
-
-  @Test
-  void closingOneEventLeavesTheSiteDispatchedWhileAnotherIsStillInForce() {
-    // Arrange: two overlapping curtailment events, both with an interval already open
-    DerEvent closing = withId(1, inForce("mrid-a", -1_000_000.0));
-    DerEvent stillInForce = withId(2, inForce("mrid-b", -900_000.0));
-    given(repository.findByMrid("mrid-a")).willReturn(Optional.of(closing));
-    given(repository.save(any(DerEvent.class))).willAnswer(call -> call.getArgument(0));
-    given(repository.findByStatusIn(any())).willReturn(List.of(stillInForce));
-
-    // Act: the utility closes A
-    service()
-        .ingest(
-            new DerControlRequest(
-                "mrid-a",
-                DerControlStatus.CANCELLED,
-                new DerControlRequest.Interval(NOW.minusSeconds(60), 3600L),
-                new DerControlRequest.ControlBase(-1_000_000.0, true, null, null),
-                DerProgram.DLR_LINE_CONSTRAINT),
-            RECEIVED_DOCUMENT,
-            TestCerts.HEADER_VALUE);
-
-    // Assert: der_dispatch is one set of site-level channels, not per-mRID, so closing A has to
-    // publish B — the event still in force. Publishing A's terminal state would write "released"
-    // and a zero setpoint straight through to plant while B is still commanding one.
-    ArgumentCaptor<DerEvent> published = ArgumentCaptor.forClass(DerEvent.class);
-    verify(publisher).publish(published.capture());
-    assertThat(published.getValue().getMrid()).isEqualTo("mrid-b");
-  }
-
-  private static DerEvent inForce(String mrid, double targetW) {
-    return new DerEvent(
-        mrid,
-        DerControlStatus.ACTIVE,
-        NOW.minusSeconds(60),
-        3600L,
-        targetW,
-        true,
-        null,
-        null,
-        RECEIVED_DOCUMENT,
-        TestCerts.LFDI,
-        DerProgram.DLR_LINE_CONSTRAINT);
   }
 }

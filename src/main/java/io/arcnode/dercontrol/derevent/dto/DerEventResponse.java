@@ -24,10 +24,10 @@ public record DerEventResponse(
         event.getStatus(),
         event.getIntervalStart(),
         event.getDurationSeconds(),
-        event.getTargetActivePowerW(),
-        event.getEnergize(),
-        event.getImportLimitW(),
-        event.getExportLimitW(),
+        event.getControl().targetActivePowerW(),
+        event.getControl().energize(),
+        event.getControl().importLimitW(),
+        event.getControl().exportLimitW(),
         event.getReceivedAt(),
         event.getSubmittedByLfdi());
   }

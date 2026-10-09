@@ -48,7 +48,9 @@ class DispatchPublisherPostureTest {
 
   private DispatchPublisher publisher() {
     return new DispatchPublisher(
-        mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), dispatchSettings);
+        new MeasurementPublisher(mqtt, mapper, config),
+        Clock.fixed(FIXED, ZoneOffset.UTC),
+        dispatchSettings);
   }
 
   @Test

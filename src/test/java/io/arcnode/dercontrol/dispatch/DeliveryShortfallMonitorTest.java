@@ -46,7 +46,7 @@ class DeliveryShortfallMonitorTest {
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;
-  @Mock private DispatchPublisher publisher;
+  @Mock private SiteStatusPublisher publisher;
   @Captor private ArgumentCaptor<MqttSubscription[]> subscriptions;
   @Captor private ArgumentCaptor<IMqttMessageListener[]> listeners;
 

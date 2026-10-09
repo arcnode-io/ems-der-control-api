@@ -1,6 +1,7 @@
 package io.arcnode.dercontrol.derevent;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -39,21 +40,13 @@ public class DerEvent {
   @Column(nullable = false)
   private long durationSeconds;
 
-  /** opModTargetW — absent when the DERControlBase carries no real-power target. */
-  @Column private @Nullable Double targetActivePowerW;
-
-  /** opModEnergize — absent when not specified. */
-  @Column private @Nullable Boolean energize;
-
-  /** opModImpLimW — absent unless the utility sent envelope-mode control. */
-  @Column private @Nullable Double importLimitW;
-
-  /** opModExpLimW — absent unless the utility sent envelope-mode control. */
-  @Column private @Nullable Double exportLimitW;
+  /** The DERControlBase modes carried — its columns live on this table. */
+  @Embedded private @Nullable DerControlBase control;
 
   /**
    * An operator's approve/reject decision (ADR-002 §16) — {@code null} means "no decision yet."
-   * Auto mode never sets this; {@link #derEventState} treats null as "proceed" outside manual mode.
+   * Auto mode never sets this; {@link DerEventState#of} treats null as "proceed" outside manual
+   * mode.
    */
   @Column private @Nullable Boolean approved;
 
@@ -73,9 +66,8 @@ public class DerEvent {
   @Column(nullable = false, updatable = false)
   private DerProgram program;
 
-  /** JPA-only. */
   protected DerEvent() {
-    // JPA instantiates via reflection, never calls this directly
+    // JPA-only — instantiated by reflection
   }
 
   public DerEvent(
@@ -94,57 +86,54 @@ public class DerEvent {
     this.status = status;
     this.intervalStart = intervalStart;
     this.durationSeconds = durationSeconds;
-    this.targetActivePowerW = targetActivePowerW;
-    this.energize = energize;
-    this.importLimitW = importLimitW;
-    this.exportLimitW = exportLimitW;
+    this.control = new DerControlBase(targetActivePowerW, energize, importLimitW, exportLimitW);
     this.rawPayload = rawPayload;
     this.submittedByLfdi = submittedByLfdi;
     this.program = program;
     this.receivedAt = Instant.now();
   }
 
-  /**
-   * Where this event sits in the dispatch pipeline (ADR-002 §16): a terminal utility status
-   * (cancelled/superseded/completed — withdrawn or naturally concluded) always wins; explicit
-   * rejection is terminal; manual mode with no decision yet is pending; otherwise ACTIVE requires
-   * both the utility's own status saying ACTIVE and the interval being open — 2030.5 servers
-   * retransmit status=Active when an interval opens, so wall-clock time alone can't be trusted to
-   * self-declare activeness.
-   *
-   * @param mode site dispatch policy (ADR-002 §16)
-   * @param now wall-clock instant to compare against {@code interval.start}
-   * @return the state to publish
-   */
+  /** The state to publish — {@link DerEventState#of} under this site's policy, right now. */
   public DerEventState derEventState(DispatchMode mode, Instant now) {
-    if (status == DerControlStatus.CANCELLED
-        || status == DerControlStatus.SUPERSEDED
-        || status == DerControlStatus.COMPLETED) {
-      return DerEventState.IDLE;
-    }
-    if (Boolean.FALSE.equals(approved)) {
-      return DerEventState.REJECTED;
-    }
-    if (mode == DispatchMode.MANUAL && approved == null) {
-      return DerEventState.PENDING;
-    }
-    boolean intervalOpen = !now.isBefore(intervalStart);
-    return status == DerControlStatus.ACTIVE && intervalOpen
-        ? DerEventState.ACTIVE
-        : DerEventState.ARMED;
+    return DerEventState.of(this, mode, now);
   }
 
   /**
    * True when {@link #derEventState} resolves to {@link DerEventState#ACTIVE} — the {@code
    * event_active} channel. Post-policy: reflects approval and interval timing, not just the
    * utility's raw status field.
-   *
-   * @param mode site dispatch policy (ADR-002 §16)
-   * @param now wall-clock instant to compare against {@code interval.start}
-   * @return whether the event is actually in force right now
    */
   public boolean isActive(DispatchMode mode, Instant now) {
     return derEventState(mode, now) == DerEventState.ACTIVE;
+  }
+
+  /**
+   * True when the utility has this control in force, taking no account of operator policy.
+   *
+   * <p>Distinct from {@link #isActive} on purpose. Some DERControl modes are mandatory: an
+   * operating envelope is the boundary a site must stay inside at all times and cannot decline, so
+   * no site-side policy — manual mode, an operator's refusal — may gate it. Those modes are
+   * published on this predicate. A setpoint asks a site to move power, which it may refuse, so that
+   * is published on {@link #isActive} instead.
+   */
+  public boolean isMandatoryInForce(Instant now) {
+    return status == DerControlStatus.ACTIVE && !now.isBefore(intervalStart);
+  }
+
+  /** See {@link DerControlBase#isEnvelopeOnly}. */
+  public boolean isEnvelopeOnly() {
+    return getControl().isEnvelopeOnly();
+  }
+
+  /** The modes carried; {@link DerControlBase#NONE} when the control carried none. */
+  public DerControlBase getControl() {
+    // Reason: Hibernate materialises an embeddable whose columns are all null as null, and a
+    // terminal retransmission carries no modes at all — so "no modes" has to read as a value here.
+    return control == null ? DerControlBase.NONE : control;
+  }
+
+  public void setControl(DerControlBase control) {
+    this.control = control;
   }
 
   public @Nullable Boolean getApproved() {
@@ -187,38 +176,6 @@ public class DerEvent {
     this.durationSeconds = durationSeconds;
   }
 
-  public @Nullable Double getTargetActivePowerW() {
-    return targetActivePowerW;
-  }
-
-  public void setTargetActivePowerW(@Nullable Double targetActivePowerW) {
-    this.targetActivePowerW = targetActivePowerW;
-  }
-
-  public @Nullable Boolean getEnergize() {
-    return energize;
-  }
-
-  public void setEnergize(@Nullable Boolean energize) {
-    this.energize = energize;
-  }
-
-  public @Nullable Double getImportLimitW() {
-    return importLimitW;
-  }
-
-  public void setImportLimitW(@Nullable Double importLimitW) {
-    this.importLimitW = importLimitW;
-  }
-
-  public @Nullable Double getExportLimitW() {
-    return exportLimitW;
-  }
-
-  public void setExportLimitW(@Nullable Double exportLimitW) {
-    this.exportLimitW = exportLimitW;
-  }
-
   public Instant getReceivedAt() {
     return receivedAt;
   }
@@ -237,33 +194,5 @@ public class DerEvent {
 
   public void setSubmittedByLfdi(String submittedByLfdi) {
     this.submittedByLfdi = submittedByLfdi;
-  }
-
-  /**
-   * True when the utility has this control in force, taking no account of operator policy.
-   *
-   * <p>Distinct from {@link #isActive} on purpose. Some DERControl modes are mandatory: an
-   * operating envelope is the boundary a site must stay inside at all times and cannot decline, so
-   * no site-side policy — manual mode, an operator's refusal — may gate it. Those modes are
-   * published on this predicate. A setpoint asks a site to move power, which it may refuse, so that
-   * is published on {@link #isActive} instead.
-   *
-   * @param now wall-clock instant to compare against {@code interval.start}
-   * @return whether the utility's own status and schedule put this control in force
-   */
-  public boolean isMandatoryInForce(Instant now) {
-    return status == DerControlStatus.ACTIVE && !now.isBefore(intervalStart);
-  }
-
-  /**
-   * True when this control carries only envelope modes — an import/export limit and no real-power
-   * setpoint. DERControlBase modes are orthogonal, so which ones are present is what distinguishes
-   * a standing operating envelope from a dispatch; CSIP-AUS adds no separate flag for it.
-   *
-   * <p>A terminal retransmission carries no modes at all and is deliberately not envelope-only: its
-   * meaning lives in the status, and it still has to close der_dispatch.
-   */
-  public boolean isEnvelopeOnly() {
-    return targetActivePowerW == null && (importLimitW != null || exportLimitW != null);
   }
 }

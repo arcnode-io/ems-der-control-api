@@ -60,7 +60,9 @@ class DispatchPublisherEnvelopeTest {
 
   private DispatchPublisher publisher() {
     return new DispatchPublisher(
-        mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), dispatchSettings);
+        new MeasurementPublisher(mqtt, mapper, config),
+        Clock.fixed(FIXED, ZoneOffset.UTC),
+        dispatchSettings);
   }
 
   /** A bounded constraint: an import limit with an interval already open, and no setpoint. */

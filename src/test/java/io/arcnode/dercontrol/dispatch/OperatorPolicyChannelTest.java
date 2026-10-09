@@ -69,9 +69,9 @@ class OperatorPolicyChannelTest {
   @Captor private ArgumentCaptor<MqttSubscription[]> subscriptions;
   @Captor private ArgumentCaptor<IMqttMessageListener[]> listeners;
 
-  private DispatchPublisher publisher() {
-    return new DispatchPublisher(
-        mqtt, mapper, config, Clock.fixed(FIXED, ZoneOffset.UTC), settings);
+  private SiteStatusPublisher publisher() {
+    return new SiteStatusPublisher(
+        new MeasurementPublisher(mqtt, mapper, config), Clock.fixed(FIXED, ZoneOffset.UTC));
   }
 
   private OperatorPolicySubscriber subscriber() {
