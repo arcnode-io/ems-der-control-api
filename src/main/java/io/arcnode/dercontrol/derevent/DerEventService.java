@@ -4,6 +4,7 @@ import io.arcnode.dercontrol.ClientIdentity;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -24,14 +25,17 @@ public class DerEventService {
   private final DerEventRepository repository;
   private final DerEventPostureService posture;
   private final EnvelopeFeedMonitor envelopeFeedMonitor;
+  private final EventLogService eventLog;
 
   public DerEventService(
       DerEventRepository repository,
       DerEventPostureService posture,
-      EnvelopeFeedMonitor envelopeFeedMonitor) {
+      EnvelopeFeedMonitor envelopeFeedMonitor,
+      EventLogService eventLog) {
     this.repository = repository;
     this.posture = posture;
     this.envelopeFeedMonitor = envelopeFeedMonitor;
+    this.eventLog = eventLog;
   }
 
   /**
@@ -48,13 +52,20 @@ public class DerEventService {
   public DerEventResponse ingest(
       DerControlRequest request, String receivedDocument, String clientCertHeader) {
     String lfdi = ClientIdentity.fromHeaderValue(clientCertHeader).lfdi();
+    Optional<DerEvent> known = repository.findByMrid(request.mrid());
     DerEvent event =
-        repository
-            .findByMrid(request.mrid())
+        known
             .map(existing -> apply(existing, request, lfdi))
             .orElseGet(() -> fromRequest(request, receivedDocument, lfdi));
 
     DerEvent saved = repository.save(event);
+    // Reason: same transaction as the row it describes, so the log never says something the
+    // store does not.
+    if (known.isPresent()) {
+      eventLog.derEventUpdated(saved, lfdi);
+    } else {
+      eventLog.derEventReceived(saved, lfdi);
+    }
     if (LOG.isInfoEnabled()) {
       LOG.info(
           "✅ Complying with DER dispatch: mrid={}, status={}, target={}W, energize={}",
@@ -105,6 +116,7 @@ public class DerEventService {
         event -> {
           event.setApproved(approved);
           DerEvent saved = repository.save(event);
+          eventLog.derEventDecided(saved, approved);
           posture.publishGoverning(saved);
         });
   }

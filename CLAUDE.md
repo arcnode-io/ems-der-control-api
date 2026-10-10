@@ -281,6 +281,11 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
   gateway. `DerEvent.submittedByLfdi` persists which device/aggregator sent each event.
 - Per-mRID authorization (reject an LFDI not allowlisted for a given mRID/site) is NOT implemented
   — needs an allowlist source that doesn't exist yet.
+- `GET /events` is the one HMI-facing endpoint and the only one Spring Security guards
+  (`SecurityConfig`): a bearer JWT minted by device-api, HS256 over `AUTH_JWT_SECRET`, which both
+  services hold (same value in both environments; the device-demo launcher's `secrets.env` already
+  carries it). Everything else is `permitAll`, CSRF off: the ingress is mTLS-terminated upstream and
+  the rest is loopback diagnostics. No role check yet — a valid token of either role reads history.
 
 ### Config
 - `cfg.yml` (`local` / `beta`, selected by `$ENV`) is the source of truth for non-secrets. `Config.Loader` (an `EnvironmentPostProcessor` in `META-INF/spring.factories`, registered as `io.arcnode.dercontrol.Config$Loader`) lifts it into the environment under `app.*`; `Config` is a `@Validated @ConfigurationProperties(prefix = "app")` record with `LogLevel` and `Loader` nested inside it — one file, Java only requires one *public top-level* type per file.
@@ -293,6 +298,7 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
   boot before JPA initialises. `V1__baseline.sql` is the schema as it stood on the live deployment when
   Flyway arrived, written `IF NOT EXISTS` so it is a no-op there and builds everything on a fresh
   database (every `*IT`).
+- `V2__event_log.sql` adds the event log (below).
 - `spring.jpa.hibernate.ddl-auto=validate`: Hibernate never changes the schema, it refuses to boot if
   the entities and the migrations disagree (`SchemaMigrationIT` fails on a fresh Postgres). A new
   column or constraint is a new `V<n>` file, never an entity-only change.
@@ -301,6 +307,19 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
   baselined at 0, not Flyway's default 1: "non-empty" says nothing about whether *our* tables exist,
   and a baseline at 1 would skip V1 on a new box where device-api booted first
   (`SharedSchemaMigrationIT`).
+
+### Event log
+The site's operational history, `event_log` (`io.arcnode.dercontrol.eventlog`): append-only rows
+written by the code path that made the thing happen, never by a bus listener guessing at causes.
+`DerEventService.ingest` writes `DER_EVENT_RECEIVED` / `DER_EVENT_UPDATED` (actor = submitter's
+LFDI) in the ingest transaction; decisions write `DER_EVENT_APPROVED` / `DER_EVENT_REJECTED`;
+`DispatchSettingsService` writes `OPERATOR_RESERVE_SET` (value) and `DISPATCH_MODE_SET` (detail);
+`DispatchPublisher.publish` hands every resolved posture to `EventLogService.derEventState`, which
+writes `DER_EVENT_STATE` only when the state differs from the last row for that mRID — boot,
+reconnect and interval-edge republishes are not events. Envelope-only controls never log.
+Events are not alarms: nothing here is acknowledged; alarms get their own lifecycle store once the
+gateway raises them. Read: `GET /events?since=<instant>&limit=<n>` (defaults: last 24 h, 200 rows,
+max 1000), oldest first, `EventLogResponse` rows with the type-specific fields null elsewhere.
 
 ### `make` verbs
 Named-verb dispatch layer (the poe-task / npm-script / `cargo cmd` analog) — every verb runs as

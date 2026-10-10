@@ -1,5 +1,6 @@
 package io.arcnode.dercontrol.derevent;
 
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class DispatchSettingsService {
 
   private final DispatchSettingsRepository repository;
+  private final EventLogService eventLog;
 
-  public DispatchSettingsService(DispatchSettingsRepository repository) {
+  public DispatchSettingsService(DispatchSettingsRepository repository, EventLogService eventLog) {
     this.repository = repository;
+    this.eventLog = eventLog;
   }
 
   /**
@@ -52,6 +55,7 @@ public class DispatchSettingsService {
     DispatchSettings settings = settings();
     settings.setMode(mode);
     repository.save(settings);
+    eventLog.dispatchModeSet(mode);
     return mode;
   }
 
@@ -72,6 +76,7 @@ public class DispatchSettingsService {
     DispatchSettings settings = settings();
     settings.setOperatorReserveWh(stored);
     repository.save(settings);
+    eventLog.operatorReserveSet(stored);
     return stored;
   }
 

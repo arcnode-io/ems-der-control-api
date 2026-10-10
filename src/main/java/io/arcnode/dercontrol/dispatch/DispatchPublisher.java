@@ -7,6 +7,7 @@ import io.arcnode.dercontrol.derevent.DispatchSettingsService;
 import io.arcnode.dercontrol.dispatch.dto.BooleanSample;
 import io.arcnode.dercontrol.dispatch.dto.EnumSample;
 import io.arcnode.dercontrol.dispatch.dto.FloatSample;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.time.Clock;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -39,12 +40,17 @@ public class DispatchPublisher {
   private final MeasurementPublisher bus;
   private final Clock clock;
   private final DispatchSettingsService dispatchSettings;
+  private final EventLogService eventLog;
 
   public DispatchPublisher(
-      MeasurementPublisher bus, Clock clock, DispatchSettingsService dispatchSettings) {
+      MeasurementPublisher bus,
+      Clock clock,
+      DispatchSettingsService dispatchSettings,
+      EventLogService eventLog) {
     this.bus = bus;
     this.clock = clock;
     this.dispatchSettings = dispatchSettings;
+    this.eventLog = eventLog;
   }
 
   /**
@@ -83,6 +89,10 @@ public class DispatchPublisher {
     // leave event_active permanently true and der_event_state permanently ACTIVE — the HMI would
     // show a curtailment always in progress. An envelope constrains; it commands nothing.
     if (!event.isEnvelopeOnly()) {
+      // Reason: this is the one place every path (ingest, decision, interval open, interval end,
+      // boot) resolves the posture, so it is where a change of posture becomes an event. The log
+      // decides whether it is a change.
+      eventLog.derEventState(event, state);
       Double targetActivePowerW = event.getControl().targetActivePowerW();
       // Reason: target_active_power is a direct setpoint written straight through to the plant,
       // and it is retained, so silence would hand a consumer the previous event's number to keep

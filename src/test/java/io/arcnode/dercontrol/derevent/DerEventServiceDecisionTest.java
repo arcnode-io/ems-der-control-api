@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +24,10 @@ class DerEventServiceDecisionTest {
   @Mock private DerEventRepository repository;
   @Mock private DerEventPostureService posture;
   @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
+  @Mock private EventLogService eventLog;
 
   private DerEventService service() {
-    return new DerEventService(repository, posture, envelopeFeedMonitor);
+    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog);
   }
 
   /** A scheduled event with no decision yet. */

@@ -15,6 +15,7 @@ import io.arcnode.dercontrol.TestCerts;
 import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.derevent.dto.DerEventResponse;
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -33,9 +34,10 @@ class DerEventServiceTest {
   @Mock private DerEventRepository repository;
   @Mock private DerEventPostureService posture;
   @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
+  @Mock private EventLogService eventLog;
 
   private DerEventService service() {
-    return new DerEventService(repository, posture, envelopeFeedMonitor);
+    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog);
   }
 
   @Test

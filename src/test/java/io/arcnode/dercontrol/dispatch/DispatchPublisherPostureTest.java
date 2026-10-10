@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -44,13 +45,15 @@ class DispatchPublisherPostureTest {
 
   @Mock private MqttClient mqtt;
   @Mock private DispatchSettingsService dispatchSettings;
+  @Mock private EventLogService eventLog;
   @Captor private ArgumentCaptor<byte[]> payload;
 
   private DispatchPublisher publisher() {
     return new DispatchPublisher(
         new MeasurementPublisher(mqtt, mapper, config),
         Clock.fixed(FIXED, ZoneOffset.UTC),
-        dispatchSettings);
+        dispatchSettings,
+        eventLog);
   }
 
   @Test

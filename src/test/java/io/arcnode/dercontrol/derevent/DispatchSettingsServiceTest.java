@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DispatchSettingsServiceTest {
 
   @Mock private DispatchSettingsRepository repository;
+  @Mock private EventLogService eventLog;
 
   private DispatchSettingsService service() {
-    return new DispatchSettingsService(repository);
+    return new DispatchSettingsService(repository, eventLog);
   }
 
   @Test

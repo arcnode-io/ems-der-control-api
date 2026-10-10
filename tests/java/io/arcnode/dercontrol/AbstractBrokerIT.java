@@ -37,9 +37,19 @@ public abstract class AbstractBrokerIT {
     }
   }
 
+  /** The HMI token signing secret every IT context boots with; HS256 needs at least 32 bytes. */
+  public static final String JWT_SECRET = "it-only-hmi-token-secret-0123456789abcdef";
+
   @DynamicPropertySource
   static void mqttProperties(DynamicPropertyRegistry registry) {
     registry.add(
         "app.mqttBrokerUrl", () -> "tcp://" + HIVEMQ.getHost() + ":" + HIVEMQ.getMqttPort());
+  }
+
+  // Reason: the security chain is part of every context, and it refuses to boot without the
+  // secret the HMI's tokens are signed with — exactly as it must in a deployment.
+  @DynamicPropertySource
+  static void jwtSecret(DynamicPropertyRegistry registry) {
+    registry.add("AUTH_JWT_SECRET", () -> JWT_SECRET);
   }
 }

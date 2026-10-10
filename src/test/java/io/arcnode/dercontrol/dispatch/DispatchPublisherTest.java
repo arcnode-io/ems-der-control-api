@@ -14,6 +14,7 @@ import io.arcnode.dercontrol.derevent.DerEvent;
 import io.arcnode.dercontrol.derevent.DerProgram;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import io.arcnode.dercontrol.derevent.DispatchSettingsService;
+import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -53,6 +54,7 @@ class DispatchPublisherTest {
 
   @Mock private MqttClient mqtt;
   @Mock private DispatchSettingsService dispatchSettings;
+  @Mock private EventLogService eventLog;
   @Captor private ArgumentCaptor<byte[]> payload;
 
   @BeforeEach
@@ -64,7 +66,8 @@ class DispatchPublisherTest {
     return new DispatchPublisher(
         new MeasurementPublisher(mqtt, mapper, config),
         Clock.fixed(FIXED, ZoneOffset.UTC),
-        dispatchSettings);
+        dispatchSettings,
+        eventLog);
   }
 
   private static DerEvent event(Double targetW, Boolean energize, DerControlStatus status) {

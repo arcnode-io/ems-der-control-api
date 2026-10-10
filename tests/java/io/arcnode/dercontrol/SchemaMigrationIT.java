@@ -24,7 +24,7 @@ class SchemaMigrationIT extends AbstractBrokerIT {
   @Autowired JdbcTemplate jdbc;
 
   @Test
-  void aFreshDatabaseIsBuiltByTheBaselineMigration() {
+  void aFreshDatabaseIsBuiltByEveryMigrationInOrder() {
     // Arrange: the context booted against an empty Postgres
 
     // Act
@@ -33,7 +33,18 @@ class SchemaMigrationIT extends AbstractBrokerIT {
             "select version, success from der_control_schema_history order by installed_rank");
 
     // Assert
-    assertThat(applied).hasSize(1);
-    assertThat(applied.get(0)).containsEntry("version", "1").containsEntry("success", true);
+    assertThat(applied).extracting("version").containsExactly("1", "2");
+    assertThat(applied).extracting("success").containsOnly(true);
+  }
+
+  @Test
+  void theEventLogStartsEmpty() {
+    // Arrange: V2 created event_log and nothing has happened on this site yet
+
+    // Act
+    Integer rows = jdbc.queryForObject("select count(*) from event_log", Integer.class);
+
+    // Assert
+    assertThat(rows).isZero();
   }
 }
