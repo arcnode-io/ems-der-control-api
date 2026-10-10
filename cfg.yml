@@ -15,6 +15,8 @@ local:
   # How long the event log keeps a row; a daily job purges older ones (Joe: 90 days).
   eventRetentionDays: 90
 
+# A deployment overrides the per-site keys below (siteId, utilityMirrorUrl, publicBaseUrl) through
+# the file CFG_CUSTOMER_PATH names, written by platform-api from the order; see Config.Loader.
 beta: &beta
   logLevel: INFO
   port: 8080

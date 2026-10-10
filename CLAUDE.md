@@ -291,7 +291,12 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
   the rest is loopback diagnostics. No role check yet — a valid token of either role reads history.
 
 ### Config
-- `cfg.yml` (`local` / `beta`, selected by `$ENV`) is the source of truth for non-secrets. `Config.Loader` (an `EnvironmentPostProcessor` in `META-INF/spring.factories`, registered as `io.arcnode.dercontrol.Config$Loader`) lifts it into the environment under `app.*`; `Config` is a `@Validated @ConfigurationProperties(prefix = "app")` record with `LogLevel` and `Loader` nested inside it — one file, Java only requires one *public top-level* type per file.
+- `cfg.yml` (`local` / `beta` / `device-demo`, selected by `$ENV`) is the source of truth for non-secrets.
+  `CFG_CUSTOMER_PATH` names the per-deployment overlay platform-api mounts at `/app/cfg.customer.yml`
+  (same mechanism as the gateway and the analyst): a flat map of the same camelCase keys —
+  `siteId`, `utilityMirrorUrl`, `publicBaseUrl` are the ones a deployment sets — merged over the
+  active block by `Config.Loader`. Absent file = the block as written; a key the block doesn't have
+  fails boot (a typo'd `siteID` must not run the site as `beta_site`). `Config.Loader` (an `EnvironmentPostProcessor` in `META-INF/spring.factories`, registered as `io.arcnode.dercontrol.Config$Loader`) lifts it into the environment under `app.*`; `Config` is a `@Validated @ConfigurationProperties(prefix = "app")` record with `LogLevel` and `Loader` nested inside it — one file, Java only requires one *public top-level* type per file.
 - `DataSourceUrl.Loader` (registered as `io.arcnode.dercontrol.DataSourceUrl$Loader`, alongside `Config$Loader`) reads `DER_CONTROL_URL` (a libpq URL platform-api provisions in beta/cloud) and splits it into `spring.datasource.*` — no-op locally, where `cfg.yml`'s `postgresHost` + `POSTGRES_PASSWORD` apply instead.
 - `application.yml` holds Spring-native wiring only, referencing `${app.*}` / `${POSTGRES_PASSWORD}`.
 - Secrets: environment only, names tracked in `template-secrets.env` (`POSTGRES_PASSWORD`, `MQTT_DER_CONTROL_API_PASSWORD`, `AUTH_JWT_SECRET`, `DER_CONTROL_LFDI_ALLOWLIST`, `DER_CONTROL_URL`, optional `NVD_API_KEY`).

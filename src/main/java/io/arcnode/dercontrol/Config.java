@@ -70,6 +70,11 @@ public record Config(
    * / {@code beta} keys, same {@code ENV} var, same rule — {@code ENV=beta} selects {@code beta},
    * anything else (unset, {@code local}, {@code ci}, …) selects {@code local}.
    *
+   * <p>{@code CFG_CUSTOMER_PATH} names the per-deployment overlay platform-api mounts (the same
+   * mechanism as the gateway's and the analyst's {@code cfg.customer.yml}): a flat map of the same
+   * keys, merged over the active block. An absent file is the defaults; a key the block doesn't
+   * have is a misconfiguration and fails boot rather than being dropped.
+   *
    * <p>Every entry lands under {@code app.*} for the enclosing {@link Config} record. {@code
    * logLevel} is also published as {@code logging.level.root} directly (not a placeholder) because
    * Boot binds the log level before placeholder resolution is available. {@code server.port} /
@@ -85,6 +90,7 @@ public record Config(
     private static final String CONFIG_FILE = "cfg.yml";
     private static final String DEFAULT_BLOCK = "local";
     private static final String PROPERTY_SOURCE_NAME = "cfg.yml";
+    private static final String CUSTOMER_PATH_VAR = "CFG_CUSTOMER_PATH";
 
     /**
      * cfg.yml key -> a Spring-native property that is bound too early for a {@code ${...}}
@@ -100,6 +106,11 @@ public record Config(
       // profile. readBlock throws on a name with no block, rather than quietly running something
       // else — a silent fallback would surface as a behaviour bug instead of a misconfiguration.
       Map<String, Object> block = readBlock(env);
+      String customerPath =
+          environment.getProperty(CUSTOMER_PATH_VAR, System.getenv().get(CUSTOMER_PATH_VAR));
+      if (customerPath != null) {
+        mergeCustomer(block, customerPath);
+      }
 
       Map<String, Object> resolved = new LinkedHashMap<>();
       block.forEach(
@@ -136,6 +147,34 @@ public record Config(
         return (Map<String, Object>) root.get(blockName);
       } catch (IOException e) {
         throw new IllegalStateException("failed to read " + CONFIG_FILE, e);
+      }
+    }
+
+    /**
+     * Overlay the customer file onto the block, key by key. Every key is a scalar here, so this is
+     * the whole of a "deep merge". A key the block doesn't know fails loudly: dropping {@code
+     * siteID} silently would run the site as {@code beta_site} and look like a topic bug.
+     */
+    @SuppressWarnings("unchecked")
+    private static void mergeCustomer(Map<String, Object> block, String customerPath) {
+      Resource resource = new FileSystemResource(customerPath);
+      if (!resource.exists()) {
+        return;
+      }
+      try (InputStream in = resource.getInputStream()) {
+        Map<String, Object> customer = new Yaml().load(in);
+        if (customer == null) {
+          return;
+        }
+        for (String key : customer.keySet()) {
+          if (!block.containsKey(key)) {
+            throw new IllegalStateException(
+                "'" + key + "' in " + customerPath + " is not a " + CONFIG_FILE + " key");
+          }
+        }
+        block.putAll(customer);
+      } catch (IOException e) {
+        throw new IllegalStateException("failed to read " + customerPath, e);
       }
     }
   }

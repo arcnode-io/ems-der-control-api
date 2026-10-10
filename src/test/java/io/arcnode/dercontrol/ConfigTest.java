@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.SpringApplication;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -55,6 +59,65 @@ class ConfigTest {
     assertThat(env.getProperty("app.postgresHost")).isEqualTo("postgres");
     assertThat(env.getProperty("app.e2e", Boolean.class)).isTrue();
     assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://hivemq:1883");
+  }
+
+  @Test
+  void customerFileOverridesTheBlockKeyByKey(@TempDir Path dir) throws IOException {
+    // Arrange: what platform writes per deployment — the site, the real DERMS, our public URL
+    Path customer = dir.resolve("cfg.customer.yml");
+    Files.writeString(
+        customer,
+        """
+        siteId: brookside_dc_1
+        utilityMirrorUrl: https://derms.utility.invalid
+        publicBaseUrl: https://203.0.113.10:8443
+        """);
+    MockEnvironment env =
+        new MockEnvironment()
+            .withProperty("ENV", "beta")
+            .withProperty("CFG_CUSTOMER_PATH", customer.toString());
+
+    // Act
+    loader.postProcessEnvironment(env, new SpringApplication());
+
+    // Assert: the three keys are the customer's, everything else is still the beta block
+    assertThat(env.getProperty("app.siteId")).isEqualTo("brookside_dc_1");
+    assertThat(env.getProperty("app.utilityMirrorUrl")).isEqualTo("https://derms.utility.invalid");
+    assertThat(env.getProperty("app.publicBaseUrl")).isEqualTo("https://203.0.113.10:8443");
+    assertThat(env.getProperty("app.mqttBrokerUrl")).isEqualTo("tcp://hivemq:1883");
+    assertThat(env.getProperty("app.eventRetentionDays", Integer.class)).isEqualTo(90);
+  }
+
+  @Test
+  void anAbsentCustomerFileLeavesTheBlockAlone(@TempDir Path dir) {
+    // Arrange: same rule as the gateway's loader — the path is set everywhere, the file only where
+    // a deployment wrote one
+    MockEnvironment env =
+        new MockEnvironment()
+            .withProperty("ENV", "beta")
+            .withProperty("CFG_CUSTOMER_PATH", dir.resolve("missing.yml").toString());
+
+    // Act
+    loader.postProcessEnvironment(env, new SpringApplication());
+
+    // Assert
+    assertThat(env.getProperty("app.siteId")).isEqualTo("beta_site");
+  }
+
+  @Test
+  void aCustomerKeyThatIsNotACfgKeyFailsBoot(@TempDir Path dir) throws IOException {
+    // Arrange: a typo'd key would otherwise be dropped silently and the site would run as beta_site
+    Path customer = dir.resolve("cfg.customer.yml");
+    Files.writeString(customer, "siteID: brookside_dc_1\n");
+    MockEnvironment env =
+        new MockEnvironment()
+            .withProperty("ENV", "beta")
+            .withProperty("CFG_CUSTOMER_PATH", customer.toString());
+
+    // Act / Assert
+    assertThatThrownBy(() -> loader.postProcessEnvironment(env, new SpringApplication()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("siteID");
   }
 
   @Test
