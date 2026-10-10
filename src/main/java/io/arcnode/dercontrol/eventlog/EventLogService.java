@@ -4,9 +4,7 @@ import io.arcnode.dercontrol.derevent.DerEvent;
 import io.arcnode.dercontrol.derevent.DerEventState;
 import io.arcnode.dercontrol.derevent.DispatchMode;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
-import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
 /** Writes the site's event log from the code paths that make things happen. */
@@ -25,14 +23,14 @@ public class EventLogService {
   }
 
   /**
-   * Everything that happened after an instant, oldest first.
+   * The rows a query selects, in the order it asks for.
    *
-   * @param since exclusive lower bound
-   * @param limit at most this many rows
-   * @return the rows, oldest first
+   * @param query bounds, filters, cursor and cap
+   * @return the matching rows, oldest first for a tail, newest first behind a cursor
    */
-  public List<EventLog> since(Instant since, int limit) {
-    return repository.findByOccurredAtAfterOrderByOccurredAtAsc(since, Limit.of(limit));
+  public List<EventLog> query(EventLogQuery query) {
+    return repository.findBy(
+        query.specification(), q -> q.sortBy(query.sort()).limit(query.limit()).all());
   }
 
   /**

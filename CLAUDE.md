@@ -318,8 +318,14 @@ LFDI) in the ingest transaction; decisions write `DER_EVENT_APPROVED` / `DER_EVE
 writes `DER_EVENT_STATE` only when the state differs from the last row for that mRID — boot,
 reconnect and interval-edge republishes are not events. Envelope-only controls never log.
 Events are not alarms: nothing here is acknowledged; alarms get their own lifecycle store once the
-gateway raises them. Read: `GET /events?since=<instant>&limit=<n>` (defaults: last 24 h, 200 rows,
-max 1000), oldest first, `EventLogResponse` rows with the type-specific fields null elsewhere.
+gateway raises them. Read: `GET /events` — `since` (strictly after; defaults to the last 24 h when
+no cursor is given), `until` (inclusive), `before=<id>` (the paging cursor: rows with a lower id,
+newest first), `order=desc` (newest first without a cursor — the first page; otherwise oldest
+first), `types=<csv of EventType>`, `program`, `limit` (200, max 1000). Bad values answer 400
+via Spring MVC's built-in method validation, which is why the controller carries no class-level
+`@Validated`. `EventLogQuery` turns that into a JPA `Specification` + `Sort`; the response is a bare array
+of `EventLogResponse` rows, type-specific fields null elsewhere. Retention: `eventRetentionDays` in
+`cfg.yml` (90), reported by `GET /events/retention` and enforced by `EventLogRetention`'s daily purge.
 
 ### `make` verbs
 Named-verb dispatch layer (the poe-task / npm-script / `cargo cmd` analog) — every verb runs as

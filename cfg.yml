@@ -12,6 +12,8 @@ local:
   # Where the utility should push DERControl Notifications. Goes out in this service's own
   # Subscription, so it has to be reachable from the utility rather than from here.
   publicBaseUrl: http://localhost:8080
+  # How long the event log keeps a row; a daily job purges older ones (Joe: 90 days).
+  eventRetentionDays: 90
 
 beta: &beta
   logLevel: INFO
@@ -27,6 +29,7 @@ beta: &beta
   # it is not deployed alongside us. A real beta target is a real utility's endpoint, TBD.
   utilityMirrorUrl: http://mock-derms-dispatch-api:8080
   publicBaseUrl: http://der-control-api:8080
+  eventRetentionDays: 90
 
 # The full device demo: this service inside the compose stack, receiving DERControls from
 # mock-derms-dispatch-api and republishing them onto the bus. Merged from beta for the container

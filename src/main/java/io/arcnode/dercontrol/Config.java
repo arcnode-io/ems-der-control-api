@@ -3,6 +3,7 @@ package io.arcnode.dercontrol;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -52,7 +53,8 @@ public record Config(
     @NotBlank String mqttUsername,
     @NotBlank String siteId,
     @NotBlank String utilityMirrorUrl,
-    @NotBlank String publicBaseUrl) {
+    @NotBlank String publicBaseUrl,
+    @Positive int eventRetentionDays) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {

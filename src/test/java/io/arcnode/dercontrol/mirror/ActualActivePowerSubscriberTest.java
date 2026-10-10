@@ -40,7 +40,8 @@ class ActualActivePowerSubscriberTest {
           "arcnode_der_control_api",
           "local_site",
           "http://localhost:8081",
-          "http://localhost:8080");
+          "http://localhost:8080",
+          90);
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;

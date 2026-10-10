@@ -72,7 +72,8 @@ class ConfigTest {
             "u",
             "local_site",
             "http://localhost:8081",
-            "http://localhost:8080");
+            "http://localhost:8080",
+            90);
 
     // Act
     var violations = validator.validate(bad);
