@@ -41,5 +41,37 @@ public final class TestCerts {
    */
   public static final String HEADER_VALUE = URLEncoder.encode(PEM, StandardCharsets.UTF_8);
 
+  // openssl req -x509 -newkey rsa:2048 -nodes -subj "/CN=unlisted-device/O=arcnode" -days 3650
+  /** A second throwaway cert: valid, but its LFDI is on no allowlist. */
+  public static final String UNLISTED_PEM =
+      """
+      -----BEGIN CERTIFICATE-----
+      MIIDOTCCAiGgAwIBAgIUJ3U6hH3M6+ilih+VH9XIOds6ibgwDQYJKoZIhvcNAQEL
+      BQAwLDEYMBYGA1UEAwwPdW5saXN0ZWQtZGV2aWNlMRAwDgYDVQQKDAdhcmNub2Rl
+      MB4XDTI2MTAxMDIxMDIyOFoXDTM2MTAwNzIxMDIyOFowLDEYMBYGA1UEAwwPdW5s
+      aXN0ZWQtZGV2aWNlMRAwDgYDVQQKDAdhcmNub2RlMIIBIjANBgkqhkiG9w0BAQEF
+      AAOCAQ8AMIIBCgKCAQEAr/bxJaiytoSdL9WyHyryL1Hsd1hHkHya8R7eIW/RvdS1
+      6Y6b09P4BRW730hIpM6IE1TqApEgmOW3L+TAWYCZZZoIs3BXdIyJElxWgMCsCQhi
+      sikUqIUshBz31ZbDb0/mfHpZaJBE3vmPrYskvE8zNyaCz24NmUjEnFKvZ/CwaBkh
+      uVKSMhJRyEKQQ2bqirv23f0bcJtUPPFR3EpLYLGRJBcuXWNIps8wMkKA48wzif2R
+      KGJfmIh9kpTnER9bN0ZMcGcBtEzcA+KvdLbSR9M2xRVtOt+I3zihIOwhSTXwEDrM
+      E2IOfuH5pokgO4JmVio74ff4mjOV4SMRA9uOvzPfQQIDAQABo1MwUTAdBgNVHQ4E
+      FgQUrwrhZZdb770E1GP9CxIo++opwIswHwYDVR0jBBgwFoAUrwrhZZdb770E1GP9
+      CxIo++opwIswDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAqXUt
+      WKOpBgjhlEr4ddi7B/n59lzR0S8QjyQQnNUqv1Kq+SvZsEDa/ED+3+orhIKtkllL
+      9jrDQEr3vv70NMubn70Sxa7X6dZco5l/U5mmGM39whbG3QxC3/uoOxifJ6Bci0cU
+      faQaoL1VbWNFs/MdWSpHMNvH0eZR0FrCekX5FJ278he6Ybzej/AX1VggzlxSAt3Y
+      OVkHgYL3zPaoPECLi0ATIIskb9KuZtU6bQ9hVdUkvLZmyXVpwK26zinq2geMOqx5
+      OyQzCF1AKc+jXPrLeQBJhEly4+wepBgpg2BdfNebI+5NDd+sPk6P9G1yi0i+JCTY
+      QFjRIfnLeaNPrIHUXg==
+      -----END CERTIFICATE-----
+      """;
+
+  /** openssl x509 -outform DER | sha256sum | cut -c1-40 — not this repo's own derivation. */
+  public static final String UNLISTED_LFDI = "5018c2e392b998ccdef04b943040f3de77b4af7b";
+
+  public static final String UNLISTED_HEADER_VALUE =
+      URLEncoder.encode(UNLISTED_PEM, StandardCharsets.UTF_8);
+
   private TestCerts() {}
 }

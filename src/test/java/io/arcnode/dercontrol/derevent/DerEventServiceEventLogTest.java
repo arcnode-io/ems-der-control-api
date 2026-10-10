@@ -31,8 +31,13 @@ class DerEventServiceEventLogTest {
   @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
   @Mock private EventLogService eventLog;
 
+  // Reason: lenient — the decision tests never reach ingest, and strict stubs would flag it.
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private LfdiAllowlist allowlist;
+
   private DerEventService service() {
-    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog);
+    given(allowlist.allows(any())).willReturn(true);
+    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog, allowlist);
   }
 
   @Test

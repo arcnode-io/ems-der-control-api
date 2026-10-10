@@ -1,5 +1,6 @@
 package io.arcnode.dercontrol;
 
+import java.util.Locale;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.DockerClientFactory;
@@ -51,5 +52,13 @@ public abstract class AbstractBrokerIT {
   @DynamicPropertySource
   static void jwtSecret(DynamicPropertyRegistry registry) {
     registry.add("AUTH_JWT_SECRET", () -> JWT_SECRET);
+  }
+
+  // Reason: an empty allowlist refuses every POST, so every *IT that ingests needs the test cert
+  // listed. Upper-case with stray separators, the way an ops-pasted value tends to arrive.
+  @DynamicPropertySource
+  static void lfdiAllowlist(DynamicPropertyRegistry registry) {
+    registry.add(
+        "DER_CONTROL_LFDI_ALLOWLIST", () -> " " + TestCerts.LFDI.toUpperCase(Locale.ROOT) + ",\n");
   }
 }

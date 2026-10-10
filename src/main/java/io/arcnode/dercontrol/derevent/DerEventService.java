@@ -10,8 +10,10 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Business logic for the DERControl ingest resource: stores events, applies an operator's decision,
@@ -26,16 +28,19 @@ public class DerEventService {
   private final DerEventPostureService posture;
   private final EnvelopeFeedMonitor envelopeFeedMonitor;
   private final EventLogService eventLog;
+  private final LfdiAllowlist allowlist;
 
   public DerEventService(
       DerEventRepository repository,
       DerEventPostureService posture,
       EnvelopeFeedMonitor envelopeFeedMonitor,
-      EventLogService eventLog) {
+      EventLogService eventLog,
+      LfdiAllowlist allowlist) {
     this.repository = repository;
     this.posture = posture;
     this.envelopeFeedMonitor = envelopeFeedMonitor;
     this.eventLog = eventLog;
+    this.allowlist = allowlist;
   }
 
   /**
@@ -47,11 +52,19 @@ public class DerEventService {
    *
    * @param clientCertHeader the gateway-forwarded {@code X-SSL-Client-Cert} header (URL-encoded
    *     PEM) — identity of the utility/aggregator that sent this event, recorded for audit
+   * @throws ResponseStatusException 403 when that identity is not on the {@link LfdiAllowlist};
+   *     nothing is stored or published
    */
   @Transactional
   public DerEventResponse ingest(
       DerControlRequest request, String receivedDocument, String clientCertHeader) {
     String lfdi = ClientIdentity.fromHeaderValue(clientCertHeader).lfdi();
+    // Reason: the ingress only proves the cert chains to the truststore, which is CA-level trust;
+    // whether this particular identity may dispatch here is this list, checked before any write.
+    if (!allowlist.allows(lfdi)) {
+      LOG.warn("⛔ DERControl from LFDI {} refused: not on the allowlist", lfdi);
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "LFDI not allowlisted");
+    }
     Optional<DerEvent> known = repository.findByMrid(request.mrid());
     DerEvent event =
         known

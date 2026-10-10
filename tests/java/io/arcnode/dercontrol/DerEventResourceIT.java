@@ -45,6 +45,25 @@ class DerEventResourceIT extends AbstractBrokerIT {
   }
 
   @Test
+  void anUnlistedLfdiIsRefusedBeforeAnythingIsStored() {
+    // Arrange: a cert the ingress would accept (we never check trust here) whose LFDI is not listed
+    String mrid = SepXml.mrid("unlisted");
+
+    // Act
+    rest.post()
+        .uri("/der-events")
+        .contentType(MediaType.parseMediaType(SepXml.MEDIA_TYPE))
+        .header("X-SSL-Client-Cert", TestCerts.UNLISTED_HEADER_VALUE)
+        .body(SepXml.notification(mrid, ACTIVE, SepXml.TARGET_MINUS_1_5MW))
+        .exchange()
+        .expectStatus()
+        .isForbidden();
+
+    // Assert: nothing persisted under that mRID
+    rest.get().uri("/der-events/{mrid}", mrid).exchange().expectStatus().isNotFound();
+  }
+
+  @Test
   void postThenGetByMridRoundTrips() {
     // Arrange
     String mrid = SepXml.mrid("post-get");

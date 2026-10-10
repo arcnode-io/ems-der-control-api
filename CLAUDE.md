@@ -279,8 +279,11 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
 - `POST /der-events` requires `X-SSL-Client-Cert`; missing it is a 400 (`@RequestHeader` with no
   `required = false`) — in prod that can only happen hitting the app directly, bypassing the
   gateway. `DerEvent.submittedByLfdi` persists which device/aggregator sent each event.
-- Per-mRID authorization (reject an LFDI not allowlisted for a given mRID/site) is NOT implemented
-  — needs an allowlist source that doesn't exist yet.
+- `LfdiAllowlist`: the LFDIs that may POST at all, from `DER_CONTROL_LFDI_ALLOWLIST` (comma or
+  whitespace separated, any case; empty refuses everyone). `DerEventService.ingest` checks it right
+  after deriving the identity and answers 403 before anything is stored or published, WARN-logging
+  the LFDI. One deployment is one site, so per-site is per-list; there is no per-mRID scoping. Ops
+  fills it in the same step as the ingress truststore secret and restarts the service.
 - `GET /events` is the one HMI-facing endpoint and the only one Spring Security guards
   (`SecurityConfig`): a bearer JWT minted by device-api, HS256 over `AUTH_JWT_SECRET`, which both
   services hold (same value in both environments; the device-demo launcher's `secrets.env` already
@@ -291,7 +294,7 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
 - `cfg.yml` (`local` / `beta`, selected by `$ENV`) is the source of truth for non-secrets. `Config.Loader` (an `EnvironmentPostProcessor` in `META-INF/spring.factories`, registered as `io.arcnode.dercontrol.Config$Loader`) lifts it into the environment under `app.*`; `Config` is a `@Validated @ConfigurationProperties(prefix = "app")` record with `LogLevel` and `Loader` nested inside it — one file, Java only requires one *public top-level* type per file.
 - `DataSourceUrl.Loader` (registered as `io.arcnode.dercontrol.DataSourceUrl$Loader`, alongside `Config$Loader`) reads `DER_CONTROL_URL` (a libpq URL platform-api provisions in beta/cloud) and splits it into `spring.datasource.*` — no-op locally, where `cfg.yml`'s `postgresHost` + `POSTGRES_PASSWORD` apply instead.
 - `application.yml` holds Spring-native wiring only, referencing `${app.*}` / `${POSTGRES_PASSWORD}`.
-- Secrets: environment only, names tracked in `template-secrets.env` (`POSTGRES_PASSWORD`, `MQTT_DER_CONTROL_API_PASSWORD`, `DER_CONTROL_URL`, optional `NVD_API_KEY`).
+- Secrets: environment only, names tracked in `template-secrets.env` (`POSTGRES_PASSWORD`, `MQTT_DER_CONTROL_API_PASSWORD`, `AUTH_JWT_SECRET`, `DER_CONTROL_LFDI_ALLOWLIST`, `DER_CONTROL_URL`, optional `NVD_API_KEY`).
 
 ### Schema
 - Flyway owns the schema: versioned SQL in `src/main/resources/db/migration/V<n>__<name>.sql`, run on

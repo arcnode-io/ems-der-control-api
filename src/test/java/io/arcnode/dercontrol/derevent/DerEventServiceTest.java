@@ -6,6 +6,7 @@ import static io.arcnode.dercontrol.derevent.DerEventFixtures.curtailment;
 import static io.arcnode.dercontrol.derevent.DerEventFixtures.request;
 import static io.arcnode.dercontrol.derevent.DerEventFixtures.withId;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -23,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Unit — mocked repository + posture service. Storing and looking up events; what the bus is told
@@ -36,8 +39,33 @@ class DerEventServiceTest {
   @Mock private EnvelopeFeedMonitor envelopeFeedMonitor;
   @Mock private EventLogService eventLog;
 
+  // Reason: lenient — the decision tests never reach ingest, and strict stubs would flag it.
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private LfdiAllowlist allowlist;
+
   private DerEventService service() {
-    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog);
+    given(allowlist.allows(any())).willReturn(true);
+    return new DerEventService(repository, posture, envelopeFeedMonitor, eventLog, allowlist);
+  }
+
+  @Test
+  void ingestRefusesAnUnlistedLfdiBeforeAnythingIsStored() {
+    // Arrange
+    DerEventService service = service();
+    given(allowlist.allows(TestCerts.LFDI)).willReturn(false);
+
+    // Act + Assert
+    assertThatThrownBy(
+            () ->
+                service.ingest(
+                    request("mrid-1", DerControlStatus.ACTIVE),
+                    RECEIVED_DOCUMENT,
+                    TestCerts.HEADER_VALUE))
+        .isInstanceOf(ResponseStatusException.class)
+        .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+        .isEqualTo(HttpStatus.FORBIDDEN);
+    verify(repository, never()).save(any());
+    verify(posture, never()).publishGoverning(any());
   }
 
   @Test
