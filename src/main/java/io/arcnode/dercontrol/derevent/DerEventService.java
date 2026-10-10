@@ -60,11 +60,14 @@ public class DerEventService {
 
     DerEvent saved = repository.save(event);
     // Reason: same transaction as the row it describes, so the log never says something the
-    // store does not.
-    if (known.isPresent()) {
-      eventLog.derEventUpdated(saved, lfdi);
-    } else {
-      eventLog.derEventReceived(saved, lfdi);
+    // store does not. The envelope is continuous — re-POSTed every few seconds under one mRID —
+    // so its arrival is not an event; its absence is an alarm (EnvelopeFeedMonitor), not this.
+    if (!saved.isEnvelopeOnly()) {
+      if (known.isPresent()) {
+        eventLog.derEventUpdated(saved, lfdi);
+      } else {
+        eventLog.derEventReceived(saved, lfdi);
+      }
     }
     if (LOG.isInfoEnabled()) {
       LOG.info(

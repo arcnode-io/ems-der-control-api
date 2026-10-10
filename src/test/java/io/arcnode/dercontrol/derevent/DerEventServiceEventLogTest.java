@@ -8,9 +8,11 @@ import static io.arcnode.dercontrol.derevent.DerEventFixtures.withId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.TestCerts;
+import io.arcnode.dercontrol.derevent.dto.DerControlRequest;
 import io.arcnode.dercontrol.dispatch.EnvelopeFeedMonitor;
 import io.arcnode.dercontrol.eventlog.EventLogService;
 import java.util.Optional;
@@ -86,5 +88,26 @@ class DerEventServiceEventLogTest {
 
     // Assert
     verify(eventLog).derEventDecided(pending, true);
+  }
+
+  @Test
+  void anEnvelopeRefreshIsNotAnEvent() {
+    // Arrange: the operating envelope re-POSTs every few seconds under one mRID, limits only
+    DerControlRequest envelope =
+        new DerControlRequest(
+            "env-1",
+            DerControlStatus.ACTIVE,
+            new DerControlRequest.Interval(START, 360L),
+            new DerControlRequest.ControlBase(null, null, 6_864_000.0, null),
+            DerProgram.DLR_LINE_CONSTRAINT);
+    given(repository.findByMrid("env-1")).willReturn(Optional.empty());
+    given(repository.save(any(DerEvent.class))).willAnswer(inv -> withId(1, inv.getArgument(0)));
+
+    // Act
+    service().ingest(envelope, RECEIVED_DOCUMENT, TestCerts.HEADER_VALUE);
+
+    // Assert
+    verify(eventLog, never()).derEventReceived(any(), any());
+    verify(eventLog, never()).derEventUpdated(any(), any());
   }
 }
