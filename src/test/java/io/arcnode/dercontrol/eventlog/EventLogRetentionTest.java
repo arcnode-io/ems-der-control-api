@@ -31,7 +31,10 @@ class EventLogRetentionTest {
         "local_site",
         "http://localhost:8081",
         "http://localhost:8080",
-        days);
+        days,
+        "/nonexistent/client.pem",
+        "/nonexistent/client-key.pem",
+        "/nonexistent/ca.pem");
   }
 
   @Test

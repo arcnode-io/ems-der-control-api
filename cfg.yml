@@ -14,6 +14,12 @@ local:
   publicBaseUrl: http://localhost:8080
   # How long the event log keeps a row; a daily job purges older ones (Joe: 90 days).
   eventRetentionDays: 90
+  # Outbound mTLS to the utility (IEEE 2030.5 §6.3.4). platform-api mounts the site's device
+  # certificate, its key and the utility's CA bundle at these paths; all three absent means the
+  # utility is not connected yet and calls go out with no client certificate (one WARN at boot).
+  utilityClientCertPath: /app/tls/utility/client.pem
+  utilityClientKeyPath: /app/tls/utility/client-key.pem
+  utilityCaBundlePath: /app/tls/utility/ca.pem
 
 # A deployment overrides the per-site keys below (siteId, utilityMirrorUrl, publicBaseUrl) through
 # the file CFG_CUSTOMER_PATH names, written by platform-api from the order; see Config.Loader.
@@ -32,6 +38,12 @@ beta: &beta
   utilityMirrorUrl: http://mock-derms-dispatch-api:8080
   publicBaseUrl: http://der-control-api:8080
   eventRetentionDays: 90
+  # Outbound mTLS to the utility (IEEE 2030.5 §6.3.4). platform-api mounts the site's device
+  # certificate, its key and the utility's CA bundle at these paths; all three absent means the
+  # utility is not connected yet and calls go out with no client certificate (one WARN at boot).
+  utilityClientCertPath: /app/tls/utility/client.pem
+  utilityClientKeyPath: /app/tls/utility/client-key.pem
+  utilityCaBundlePath: /app/tls/utility/ca.pem
 
 # The full device demo: this service inside the compose stack, receiving DERControls from
 # mock-derms-dispatch-api and republishing them onto the bus. Merged from beta for the container

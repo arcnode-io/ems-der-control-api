@@ -99,7 +99,7 @@ class MirrorCrossRepoIT extends AbstractBrokerIT {
   void aRealSeparatelyGeneratedMockDermsDispatchApiCanParseOurRealMirrorUsagePointXml() {
     // Act — no exception means der-control-api's real marshalled XML round-tripped through a
     // real HTTP call into a genuinely separate JAXB implementation of the same schema.
-    client.post(MirrorUsagePointFactory.build(500_000L));
+    client.post(MirrorUsagePointFactory.build(500_000L, DerDispatchIdentity.LFDI));
 
     // Assert — the real container actually parsed it, not just accepted arbitrary bytes.
     await()

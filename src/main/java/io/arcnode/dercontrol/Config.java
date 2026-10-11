@@ -40,6 +40,13 @@ import org.yaml.snakeyaml.Yaml;
  *     Subscription this service registers with the utility, as the notificationURI the utility
  *     pushes DERControl Notifications to, so it has to be reachable from there rather than from
  *     here.
+ * @param utilityClientCertPath PEM file holding this site's device certificate, presented to the
+ *     utility as the mTLS client identity (IEEE 2030.5 §6.3.4); its SHA-256 is the LFDI the utility
+ *     knows us by. Platform mounts it; absent means "utility not connected yet" (see {@code
+ *     UtilityTls})
+ * @param utilityClientKeyPath PEM (PKCS#8) private key for {@code utilityClientCertPath}
+ * @param utilityCaBundlePath PEM bundle of the CA certificate(s) that sign the utility's server
+ *     certificate
  */
 @ConfigurationProperties(prefix = "app")
 @Validated
@@ -54,7 +61,10 @@ public record Config(
     @NotBlank String siteId,
     @NotBlank String utilityMirrorUrl,
     @NotBlank String publicBaseUrl,
-    @Positive int eventRetentionDays) {
+    @Positive int eventRetentionDays,
+    @NotBlank String utilityClientCertPath,
+    @NotBlank String utilityClientKeyPath,
+    @NotBlank String utilityCaBundlePath) {
 
   /** Log levels accepted in {@code cfg.yml} — mirrors the sibling templates. */
   public enum LogLevel {

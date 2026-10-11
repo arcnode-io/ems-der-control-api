@@ -22,7 +22,8 @@ class MirrorUsagePointFactoryTest {
     long activeWatts = 500_000L;
 
     // Act
-    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
+    MirrorUsagePointElement usagePoint =
+        MirrorUsagePointFactory.build(activeWatts, DerDispatchIdentity.LFDI);
     String xml = Ieee20305Xml.marshal(usagePoint);
 
     // Assert
@@ -38,7 +39,8 @@ class MirrorUsagePointFactoryTest {
     long activeWatts = 500_000L;
 
     // Act
-    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
+    MirrorUsagePointElement usagePoint =
+        MirrorUsagePointFactory.build(activeWatts, DerDispatchIdentity.LFDI);
 
     // Assert
     assertThat(usagePoint.getStatus()).isEqualTo((short) 1);
@@ -50,7 +52,8 @@ class MirrorUsagePointFactoryTest {
     long activeWatts = 500_000L;
 
     // Act
-    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(activeWatts);
+    MirrorUsagePointElement usagePoint =
+        MirrorUsagePointFactory.build(activeWatts, DerDispatchIdentity.LFDI);
 
     // Assert
     assertThat(usagePoint.getDeviceLFDI())
@@ -71,7 +74,8 @@ class MirrorUsagePointFactoryTest {
     long chargingWatts = -250_000L;
 
     // Act
-    MirrorUsagePointElement usagePoint = MirrorUsagePointFactory.build(chargingWatts);
+    MirrorUsagePointElement usagePoint =
+        MirrorUsagePointFactory.build(chargingWatts, DerDispatchIdentity.LFDI);
 
     // Assert
     assertThat(usagePoint.getMirrorMeterReading().get(0).getReading().getValue())

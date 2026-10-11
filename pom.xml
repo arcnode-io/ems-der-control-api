@@ -54,6 +54,12 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-restclient</artifactId>
     </dependency>
+    <!-- ClientHttpRequestFactoryBuilder + HttpClientSettings: how UtilityTls hands the outbound
+         clients an SSL bundle without changing their HTTP/1.1 request factory. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-http-client</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>

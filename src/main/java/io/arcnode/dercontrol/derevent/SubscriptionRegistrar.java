@@ -3,11 +3,11 @@ package io.arcnode.dercontrol.derevent;
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.mirror.Ieee20305Xml;
 import io.arcnode.dercontrol.mirror.ieee20305.SubscriptionElement;
+import io.arcnode.dercontrol.utility.UtilityTls;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -59,9 +59,9 @@ public class SubscriptionRegistrar {
   private final String publicBaseUrl;
   private final AtomicBoolean subscribed = new AtomicBoolean();
 
-  public SubscriptionRegistrar(RestClient.Builder builder, Config config) {
-    // Reason: same HTTP/2-incapable pin as MirrorUsagePointClient, against the same host.
-    this.client = builder.requestFactory(new SimpleClientHttpRequestFactory()).build();
+  public SubscriptionRegistrar(RestClient.Builder builder, Config config, UtilityTls tls) {
+    // Reason: same request factory as MirrorUsagePointClient — same host, same identity.
+    this.client = builder.requestFactory(tls.requestFactory()).build();
     this.utilityBaseUrl = config.utilityMirrorUrl();
     this.publicBaseUrl = config.publicBaseUrl();
   }

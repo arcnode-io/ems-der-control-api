@@ -56,7 +56,7 @@ class MirrorUsagePointClientIT extends AbstractBrokerIT {
     wiremock.stubFor(post("/mirror-usage-points").willReturn(status(201)));
 
     // Act
-    client.post(MirrorUsagePointFactory.build(500_000L));
+    client.post(MirrorUsagePointFactory.build(500_000L, DerDispatchIdentity.LFDI));
 
     // Assert: real marshalled XML, not a JSON body reusing this service's other contract
     wiremock.verify(

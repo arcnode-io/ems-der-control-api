@@ -284,6 +284,19 @@ Domain MCP = external, standards-scoped vocabulary and reference knowledge; cano
   after deriving the identity and answers 403 before anything is stored or published, WARN-logging
   the LFDI. One deployment is one site, so per-site is per-list; there is no per-mRID scoping. Ops
   fills it in the same step as the ingress truststore secret and restarts the service.
+- Outbound mTLS (`UtilityTls`): the identity *we* present when calling the utility
+  (`MirrorUsagePointClient`, `SubscriptionRegistrar`). Three PEM files named by `cfg.yml`
+  (`utilityClientCertPath`, `utilityClientKeyPath`, `utilityCaBundlePath`, defaults under
+  `/app/tls/utility/`), mounted by platform-api from `/opt/arcnode/der-control-client.pem`,
+  `der-control-client-key.pem`, `der-control-utility-ca.pem`. All three absent = utility not
+  connected yet: boots, one WARN ("🔓 utility TLS identity not configured"), calls go out with no
+  client cert and JVM trust. Any other mix fails boot ("utility TLS identity is incomplete: missing
+  […]"). The client cert's SHA-256 is the LFDI the utility knows us by, so `UtilityTls.lfdi()` feeds
+  the `MirrorUsagePoint`; without a cert it falls back to `DerDispatchIdentity`'s embedded one.
+  Both clients take their request factory from `UtilityTls`, which keeps the HTTP/1.1
+  `SimpleClientHttpRequestFactory` pin and applies the Spring SSL bundle. Verified by
+  `UtilityTlsTest` against a local HTTPS server that requires a client certificate (keytool-made
+  throwaway certs at test time, nothing committed).
 - `GET /events` is the one HMI-facing endpoint and the only one Spring Security guards
   (`SecurityConfig`): a bearer JWT minted by device-api, HS256 over `AUTH_JWT_SECRET`, which both
   services hold (same value in both environments; the device-demo launcher's `secrets.env` already

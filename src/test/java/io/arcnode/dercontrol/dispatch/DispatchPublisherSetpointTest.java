@@ -49,7 +49,10 @@ class DispatchPublisherSetpointTest {
           "local_site",
           "http://localhost:8081",
           "http://localhost:8080",
-          90);
+          90,
+          "/nonexistent/client.pem",
+          "/nonexistent/client-key.pem",
+          "/nonexistent/ca.pem");
   private final JsonMapper mapper = JsonMapper.builder().build();
 
   @Mock private MqttClient mqtt;

@@ -1,5 +1,6 @@
 package io.arcnode.dercontrol.mirror;
 
+import io.arcnode.dercontrol.utility.UtilityTls;
 import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,11 +19,13 @@ public class MirrorReportPublisher {
 
   private final ActualActivePowerSubscriber subscriber;
   private final MirrorUsagePointClient client;
+  private final UtilityTls tls;
 
   public MirrorReportPublisher(
-      ActualActivePowerSubscriber subscriber, MirrorUsagePointClient client) {
+      ActualActivePowerSubscriber subscriber, MirrorUsagePointClient client, UtilityTls tls) {
     this.subscriber = subscriber;
     this.client = client;
+    this.tls = tls;
   }
 
   @Scheduled(fixedDelay = POST_RATE_MILLIS)
@@ -31,6 +34,6 @@ public class MirrorReportPublisher {
     if (activeWatts == null) {
       return;
     }
-    client.post(MirrorUsagePointFactory.build(Math.round(activeWatts)));
+    client.post(MirrorUsagePointFactory.build(Math.round(activeWatts), tls.lfdi()));
   }
 }

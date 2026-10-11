@@ -50,16 +50,18 @@ public final class MirrorUsagePointFactory {
   /**
    * @param activeWatts der_dispatch's actual measured active power — positive discharge, negative
    *     charge, matching bess_rack's own {@code active_power} convention
+   * @param lfdi this site's LFDI, hex — the client certificate's when the utility is connected
+   *     ({@code UtilityTls}), else {@link DerDispatchIdentity#LFDI}
    */
-  public static MirrorUsagePointElement build(long activeWatts) {
+  public static MirrorUsagePointElement build(long activeWatts, String lfdi) {
     MirrorUsagePointElement usagePoint = new MirrorUsagePointElement();
     usagePoint.setSchemaVer(SCHEMA_VERSION);
-    usagePoint.setDeviceLFDI(HexFormat.of().parseHex(DerDispatchIdentity.LFDI));
-    usagePoint.setMRID(mrid(0));
+    usagePoint.setDeviceLFDI(HexFormat.of().parseHex(lfdi));
+    usagePoint.setMRID(mrid(lfdi, 0));
     usagePoint.setRoleFlags(roleFlags());
     usagePoint.setServiceCategoryKind(serviceCategoryKind());
     usagePoint.setStatus(STATUS_ON);
-    usagePoint.getMirrorMeterReading().add(activePowerReading(activeWatts));
+    usagePoint.getMirrorMeterReading().add(activePowerReading(activeWatts, lfdi));
     return usagePoint;
   }
 
@@ -70,8 +72,8 @@ public final class MirrorUsagePointFactory {
   // a real PEN before this is anything more than a mock. MirrorUsagePoint and each
   // MirrorMeterReading both extend IdentifiedObject independently and each need their own distinct
   // mRID, so this takes a byte offset rather than always using the same 16 bytes.
-  private static MRIDType mrid(int offset) {
-    byte[] lfdiBytes = HexFormat.of().parseHex(DerDispatchIdentity.LFDI);
+  private static MRIDType mrid(String lfdi, int offset) {
+    byte[] lfdiBytes = HexFormat.of().parseHex(lfdi);
     MRIDType mrid = new MRIDType();
     mrid.setValue(Arrays.copyOfRange(lfdiBytes, offset, offset + 16));
     return mrid;
@@ -89,7 +91,7 @@ public final class MirrorUsagePointFactory {
     return serviceKind;
   }
 
-  private static MirrorMeterReading activePowerReading(long activeWatts) {
+  private static MirrorMeterReading activePowerReading(long activeWatts, String lfdi) {
     KindType kind = new KindType();
     kind.setValue(KIND_POWER);
     ReadingType readingType = new ReadingType();
@@ -101,7 +103,7 @@ public final class MirrorUsagePointFactory {
     reading.setValue(activeWatts);
 
     MirrorMeterReading meterReading = new MirrorMeterReading();
-    meterReading.setMRID(mrid(4));
+    meterReading.setMRID(mrid(lfdi, 4));
     meterReading.setReadingType(readingType);
     meterReading.setReading(reading);
     return meterReading;

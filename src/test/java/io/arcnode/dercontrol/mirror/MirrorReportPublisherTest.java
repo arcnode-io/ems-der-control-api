@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
+import io.arcnode.dercontrol.utility.UtilityTls;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,8 +23,12 @@ class MirrorReportPublisherTest {
   @Mock private ActualActivePowerSubscriber subscriber;
   @Mock private MirrorUsagePointClient client;
 
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private UtilityTls tls;
+
   private MirrorReportPublisher publisher() {
-    return new MirrorReportPublisher(subscriber, client);
+    given(tls.lfdi()).willReturn(DerDispatchIdentity.LFDI);
+    return new MirrorReportPublisher(subscriber, client, tls);
   }
 
   @Test

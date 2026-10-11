@@ -2,8 +2,8 @@ package io.arcnode.dercontrol.mirror;
 
 import io.arcnode.dercontrol.Config;
 import io.arcnode.dercontrol.mirror.ieee20305.MirrorUsagePointElement;
+import io.arcnode.dercontrol.utility.UtilityTls;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -21,15 +21,13 @@ public class MirrorUsagePointClient {
 
   private final RestClient client;
 
-  public MirrorUsagePointClient(RestClient.Builder builder, Config config) {
-    // Reason: same HTTP/2-incapable pin as every other outbound client in this system — the JDK
-    // HttpClient-backed default factory has a confirmed, reproducible EOFException against
-    // WireMock (see mock-derms-dispatch-api's DerEventsClient for the full writeup).
+  public MirrorUsagePointClient(RestClient.Builder builder, Config config, UtilityTls tls) {
+    // Reason: UtilityTls keeps the HTTP/2-incapable SimpleClientHttpRequestFactory pin every
+    // outbound client in this system relies on (the JDK HttpClient-backed default has a confirmed,
+    // reproducible EOFException against WireMock — see mock-derms-dispatch-api's DerEventsClient)
+    // and adds the site's client certificate + utility trust when platform has mounted them.
     this.client =
-        builder
-            .requestFactory(new SimpleClientHttpRequestFactory())
-            .baseUrl(config.utilityMirrorUrl())
-            .build();
+        builder.requestFactory(tls.requestFactory()).baseUrl(config.utilityMirrorUrl()).build();
   }
 
   public void post(MirrorUsagePointElement usagePoint) {
